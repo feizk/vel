@@ -1,0 +1,30 @@
+{
+  "name": "@feizk/parser",
+  "version": "1.0.0",
+  "description": "A flexible package to parse messages for commands, subcommands, and arguments with configurable prefixes",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^1.6.1"
+  },
+  "keywords": [
+    "discord",
+    "parser",
+    "commands",
+    "subcommands",
+    "arguments"
+  ],
+  "author": "feizk",
+  "license": "MIT"
+}
