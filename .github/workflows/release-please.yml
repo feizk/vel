@@ -31,9 +31,12 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
       - run: pnpm install --frozen-lockfile
       - run: |
-          for release in $(echo '${{ needs.release-please.outputs.releases_created }}' | jq -r '.[].path'); do
-            echo "Publishing $release"
-            pnpm publish --filter "$release"
-          done
+          releases='${{ needs.release-please.outputs.releases_created }}'
+          if [ "$releases" != "false" ] && [ "$releases" != "[]" ]; then
+            for release in $(echo "$releases" | jq -r '.[].path'); do
+              echo "Publishing $release"
+              pnpm publish --filter "$release"
+            done
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
