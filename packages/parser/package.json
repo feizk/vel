@@ -8,8 +8,10 @@
     "access": "public"
   },
   "scripts": {
+    "tsc": "tsc",
     "build": "tsup",
     "dev": "tsup --watch",
+    "clean": "rm -rf dist",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "test": "vitest",
