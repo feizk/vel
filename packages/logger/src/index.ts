@@ -39,8 +39,4 @@ export class Logger {
   private getTimestamp(): string {
     return new Date().toISOString();
   }
-
-  private removeFunction() {
-    return 'Please remove this function';
-  }
 }
