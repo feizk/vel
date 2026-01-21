@@ -145,4 +145,40 @@ describe('Parser Parsing', () => {
       originalMessage: '!help --count 5 --enabled true --name John',
     });
   });
+
+  it('should parse quoted arguments with spaces in typed format', () => {
+    const parser = new Parser({ prefix: '!' });
+    const result = parser.parse('!help name("hello world") count(5)');
+    expect(result).toEqual({
+      prefixUsed: '!',
+      command: 'help',
+      subcommands: [],
+      args: { name: 'hello world', count: 5 },
+      originalMessage: '!help name("hello world") count(5)',
+    });
+  });
+
+  it('should parse quoted arguments with spaces in equals format', () => {
+    const parser = new Parser({ prefix: '!', argFormat: 'equals' });
+    const result = parser.parse('!help name="hello world" count=5');
+    expect(result).toEqual({
+      prefixUsed: '!',
+      command: 'help',
+      subcommands: [],
+      args: { name: 'hello world', count: 5 },
+      originalMessage: '!help name="hello world" count=5',
+    });
+  });
+
+  it('should parse quoted arguments with spaces in named format', () => {
+    const parser = new Parser({ prefix: '!', argFormat: 'named' });
+    const result = parser.parse('!help --name "hello world" --count 5');
+    expect(result).toEqual({
+      prefixUsed: '!',
+      command: 'help',
+      subcommands: [],
+      args: { name: 'hello world', count: 5 },
+      originalMessage: '!help --name "hello world" --count 5',
+    });
+  });
 });

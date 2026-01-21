@@ -13,6 +13,40 @@ export class Parser {
   };
 
   /**
+   * Tokenizes the input string, respecting quoted strings.
+   * @param input - The string to tokenize.
+   * @returns Array of tokens.
+   */
+  private tokenize(input: string): string[] {
+    const tokens: string[] = [];
+    const delimiter = this.options.delimiter;
+    let i = 0;
+    while (i < input.length) {
+      if (input[i] === delimiter) {
+        i++;
+      } else {
+        const start = i;
+        while (i < input.length) {
+          if (input[i] === delimiter) {
+            break;
+          } else if (input[i] === '"') {
+            i++;
+            while (i < input.length && input[i] !== '"') {
+              if (input[i] === '\\') i++;
+              i++;
+            }
+            if (i < input.length) i++;
+          } else {
+            i++;
+          }
+        }
+        tokens.push(input.slice(start, i));
+      }
+    }
+    return tokens.filter((token) => token.length > 0);
+  }
+
+  /**
    * Coerces a string value to its appropriate type (number, boolean, or string).
    * @param value - The string value to coerce.
    * @returns The coerced value.
@@ -94,9 +128,7 @@ export class Parser {
     }
 
     content = content.trim();
-    const parts = content
-      .split(this.options.delimiter)
-      .filter((p) => p.length > 0);
+    const parts = this.tokenize(content);
 
     if (parts.length === 0) {
       return null;
@@ -113,67 +145,116 @@ export class Parser {
 
     switch (this.options.argFormat) {
       case 'typed':
-        argRegex = /^(\w+)\(([^)]+)\)$/;
+        argRegex = /^(\w+)\(\s*("[^"]*"|[^)\s]*)\s*\)/;
         break;
       case 'equals':
-        argRegex = /^(\w+)=(.+)$/;
+        argRegex = /^(\w+)\s*=\s*("[^"]*"|[^"\s]*)/;
         break;
       case 'named':
         isPairFormat = true;
-        argRegex = /^--(\w+)$/;
+        argRegex = /^--(\w+)/;
         break;
       default:
-        argRegex = /^(\w+)\(([^)]+)\)$/;
+        argRegex = /^(\w+)\(\s*("[^"]*"|[^)\s]*)\s*\)/;
     }
+
+    // Helper to check if a part is an argument
+    const isArg = (part: string): boolean => {
+      if (isPairFormat) {
+        return argRegex.test(part);
+      } else {
+        return argRegex.test(part);
+      }
+    };
 
     // Find the first arg
     for (let i = 1; i < parts.length; i++) {
-      if (isPairFormat) {
-        if (parts[i].match(argRegex)) {
-          argStartIndex = i;
-          break;
-        }
-      } else {
-        if (parts[i].match(argRegex)) {
-          argStartIndex = i;
-          break;
-        }
+      if (isArg(parts[i])) {
+        argStartIndex = i;
+        break;
       }
       subcommands.push(parts[i]);
     }
 
     // Parse args
     if (argStartIndex !== -1) {
+      const argsContent = parts
+        .slice(argStartIndex)
+        .join(this.options.delimiter);
+      let remaining = argsContent;
+
       if (isPairFormat) {
         // Named: --key value pairs
-        for (let i = argStartIndex; i < parts.length; i += 2) {
-          const keyMatch = parts[i].match(argRegex);
-          if (keyMatch && i + 1 < parts.length) {
-            const key = keyMatch[1];
-            const value = parts[i + 1];
-            args[key] = this.coerceValue(value);
-          } else {
+        while (remaining.trim()) {
+          const keyMatch = remaining.match(argRegex);
+          if (!keyMatch) {
             errors.push(
               this.options.errorMessages.invalidNamedArg
-                .replace('{part}', parts[i])
-                .replace('{index}', i.toString()),
+                .replace('{part}', remaining.split(' ')[0])
+                .replace('{index}', 'unknown'),
             );
+            break;
           }
+          const key = keyMatch[1];
+          remaining = remaining.slice(keyMatch[0].length).trim();
+
+          if (!remaining) {
+            errors.push(
+              this.options.errorMessages.invalidNamedArg
+                .replace('{part}', keyMatch[0])
+                .replace('{index}', 'unknown'),
+            );
+            break;
+          }
+
+          // Parse value
+          let value: string;
+          if (remaining.startsWith('"')) {
+            const endQuote = remaining.indexOf('"', 1);
+            if (endQuote === -1) {
+              errors.push(
+                this.options.errorMessages.invalidNamedArg
+                  .replace('{part}', remaining)
+                  .replace('{index}', 'unknown'),
+              );
+              break;
+            }
+            value = remaining.slice(1, endQuote);
+            remaining = remaining.slice(endQuote + 1).trim();
+          } else {
+            const spaceIndex = remaining.indexOf(this.options.delimiter);
+            if (spaceIndex === -1) {
+              value = remaining;
+              remaining = '';
+            } else {
+              value = remaining.slice(0, spaceIndex);
+              remaining = remaining
+                .slice(spaceIndex + this.options.delimiter.length)
+                .trim();
+            }
+          }
+          args[key] = this.coerceValue(value);
         }
       } else {
-        // Typed or equals: each part is arg
-        for (let i = argStartIndex; i < parts.length; i++) {
-          const match = parts[i].match(argRegex);
+        // Typed or equals: parse sequentially
+        while (remaining.trim()) {
+          const match = remaining.match(argRegex);
           if (match) {
-            const [, key, value] = match;
+            const key = match[1];
+            let value = match[2];
+            if (value.startsWith('"') && value.endsWith('"')) {
+              value = value.slice(1, -1);
+            }
             args[key] = this.coerceValue(value);
+            remaining = remaining.slice(match[0].length).trim();
           } else {
             errors.push(
               this.options.errorMessages.invalidArgFormat.replace(
                 '{part}',
-                parts[i],
+                remaining.split(this.options.delimiter)[0],
               ),
             );
+            break;
           }
         }
       }

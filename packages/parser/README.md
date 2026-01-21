@@ -128,12 +128,21 @@ const result = parser.parse('!help count(5) enabled(true) name(John)');
 // result.args: { count: 5, enabled: true, name: 'John' }
 ```
 
+## Quoted Arguments
+
+Arguments containing spaces can be enclosed in double quotes:
+
+```typescript
+const result = parser.parse('!help name("hello world") message="multi word value" --status "active now"');
+// result.args: { name: 'hello world', message: 'multi word value', status: 'active now' }
+```
+
 ## Argument Formats
 
 The parser supports different argument formats, configurable via `argFormat`:
 
-- **typed** (default): `type(value)`, e.g., `name(general)`
-- **equals**: `key=value`, e.g., `name=general`
-- **named**: `--key value`, e.g., `--name general`
+- **typed** (default): `type(value)`, e.g., `name(general)` or `name("multi word")`
+- **equals**: `key=value`, e.g., `name=general` or `name="multi word"`
+- **named**: `--key value`, e.g., `--name general` or `--name "multi word"`
 
-The parser splits the message by the delimiter, identifies the command, collects subcommands until an argument in the specified format is found, and parses arguments into an object. Invalid formats are rejected.
+Arguments containing spaces must be enclosed in double quotes. The parser tokenizes the input respecting quotes, identifies the command, collects subcommands until an argument is found, and parses arguments into an object. Invalid formats are rejected.

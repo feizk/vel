@@ -24,7 +24,7 @@ describe('Parser Errors', () => {
       subcommands: [],
       args: {},
       originalMessage: 'v?help --name',
-      errors: ['Invalid named arg: "--name" at 1'],
+      errors: ['Invalid named arg: "--name" at unknown'],
     });
 
     result = parser.parse('v?help --name general extra');
@@ -34,7 +34,7 @@ describe('Parser Errors', () => {
       subcommands: [],
       args: { name: 'general' },
       originalMessage: 'v?help --name general extra',
-      errors: ['Invalid named arg: "extra" at 3'],
+      errors: ['Invalid named arg: "extra" at unknown'],
     });
   });
 
