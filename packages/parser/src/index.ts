@@ -276,4 +276,8 @@ export class Parser {
   }
 }
 
+export function test() {
+  return 'test';
+}
+
 export { ParsedCommand, ParserOptions };
