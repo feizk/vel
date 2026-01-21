@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/feizk/vel/compare/parser-v1.1.0...parser-v1.2.0) (2026-01-21)
+
+
+### Features
+
+* custom error messages ([7a28607](https://github.com/feizk/vel/commit/7a2860747c4f0364984ab3601c9aca8cac43968f))
+
 ## [1.1.0](https://github.com/feizk/vel/compare/parser-v1.0.0...parser-v1.1.0) (2026-01-20)
 
 ### Features
