@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.1](https://github.com/feizk/vel/compare/parser-v1.4.0...parser-v1.4.1) (2026-01-21)
+
+
+### Styles
+
+* prettier ([44bfbe3](https://github.com/feizk/vel/commit/44bfbe3e2cf74254a7d25388dbc4ff703a9dd712))
+
 ## [1.4.0](https://github.com/feizk/vel/compare/parser-v1.3.0...parser-v1.4.0) (2026-01-21)
 
 
