@@ -6,4 +6,14 @@ describe('Parser Constructor', () => {
     expect(() => new Parser({ prefix: '' })).toThrow('Prefix must be provided');
     expect(() => new Parser({ prefix: [] })).toThrow('Prefix must be provided');
   });
+
+  it('should throw custom error message if no prefix provided', () => {
+    expect(
+      () =>
+        new Parser({
+          prefix: '',
+          errorMessages: { prefixRequired: 'Custom prefix error' },
+        }),
+    ).toThrow('Custom prefix error');
+  });
 });

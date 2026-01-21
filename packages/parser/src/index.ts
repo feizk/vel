@@ -4,7 +4,13 @@ import { ParserOptions, ParsedCommand } from './types';
  * A parser for messages with configurable prefixes, delimiters, and argument formats.
  */
 export class Parser {
-  private options: Required<ParserOptions>;
+  private options: Required<Omit<ParserOptions, 'errorMessages'>> & {
+    errorMessages: {
+      prefixRequired: string;
+      invalidArgFormat: string;
+      invalidNamedArg: string;
+    };
+  };
 
   /**
    * Creates an instance of Parser.
@@ -12,11 +18,22 @@ export class Parser {
    * @throws {Error} If prefix is not provided or empty.
    */
   constructor(options: ParserOptions) {
+    const errorMessages = {
+      prefixRequired:
+        options.errorMessages?.prefixRequired ?? 'Prefix must be provided',
+      invalidArgFormat:
+        options.errorMessages?.invalidArgFormat ??
+        'Invalid argument format: "{part}"',
+      invalidNamedArg:
+        options.errorMessages?.invalidNamedArg ??
+        'Invalid named arg: "{part}" at {index}',
+    };
+
     if (
       !options.prefix ||
       (Array.isArray(options.prefix) && options.prefix.length === 0)
     ) {
-      throw new Error('Prefix must be provided');
+      throw new Error(errorMessages.prefixRequired);
     }
 
     this.options = {
@@ -24,6 +41,7 @@ export class Parser {
       caseSensitive: options.caseSensitive ?? false,
       delimiter: options.delimiter ?? ' ',
       argFormat: options.argFormat ?? 'typed',
+      errorMessages,
     };
   }
 
@@ -122,7 +140,11 @@ export class Parser {
             const value = parts[i + 1];
             args[key] = value;
           } else {
-            errors.push(`Invalid named arg: "${parts[i]}" at ${i}`);
+            errors.push(
+              this.options.errorMessages.invalidNamedArg
+                .replace('{part}', parts[i])
+                .replace('{index}', i.toString()),
+            );
           }
         }
       } else {
@@ -133,7 +155,12 @@ export class Parser {
             const [, key, value] = match;
             args[key] = value;
           } else {
-            errors.push(`Invalid argument format: "${parts[i]}"`);
+            errors.push(
+              this.options.errorMessages.invalidArgFormat.replace(
+                '{part}',
+                parts[i],
+              ),
+            );
           }
         }
       }

@@ -75,6 +75,22 @@ const result = parser.parse(
 console.log(result?.args); // { name: 'general', status: 'active' }
 ```
 
+### Custom Error Messages
+
+```typescript
+const parser = new Parser({
+  prefix: '!',
+  errorMessages: {
+    invalidArgFormat: 'Oops! "{part}" is not a valid argument',
+    invalidNamedArg: 'Bad named arg "{part}" found at position {index}',
+    prefixRequired: 'You forgot to set a prefix!',
+  },
+});
+
+const result = parser.parse('!help invalidArg');
+console.log(result?.errors); // ['Oops! "invalidArg" is not a valid argument']
+```
+
 ## API
 
 ### ParserOptions
@@ -83,6 +99,7 @@ console.log(result?.args); // { name: 'general', status: 'active' }
 - `caseSensitive?`: `boolean` - Whether prefix matching is case sensitive. Default: `false`.
 - `delimiter?`: `string` - The delimiter to split arguments. Default: `' '`.
 - `argFormat?`: `'typed' | 'equals' | 'named'` - The format for arguments. Options: 'typed' for `type(value)`, 'equals' for `key=value`, 'named' for `--key value`. Default: `'typed'`.
+- `errorMessages?`: `{ prefixRequired?, invalidArgFormat?, invalidNamedArg? }` - Custom error message templates. Supports placeholders `{part}` and `{index}`. Default messages provided if not specified.
 
 ### ParsedCommand
 

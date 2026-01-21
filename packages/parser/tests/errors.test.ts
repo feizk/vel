@@ -37,4 +37,23 @@ describe('Parser Errors', () => {
       errors: ['Invalid named arg: "extra" at 3'],
     });
   });
+
+  it('should use custom error messages', () => {
+    const parser = new Parser({
+      prefix: 'v?',
+      errorMessages: {
+        invalidArgFormat: 'Custom error: {part} is invalid',
+        invalidNamedArg: 'Custom named error: {part} (position {index})',
+      },
+    });
+    const result = parser.parse('v?help name(general) nakedArg');
+    expect(result).toEqual({
+      prefixUsed: 'v?',
+      command: 'help',
+      subcommands: [],
+      args: { name: 'general' },
+      originalMessage: 'v?help name(general) nakedArg',
+      errors: ['Custom error: nakedArg is invalid'],
+    });
+  });
 });

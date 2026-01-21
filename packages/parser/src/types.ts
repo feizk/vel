@@ -3,6 +3,11 @@ export interface ParserOptions {
   caseSensitive?: boolean;
   delimiter?: string;
   argFormat?: 'typed' | 'equals' | 'named';
+  errorMessages?: {
+    prefixRequired?: string;
+    invalidArgFormat?: string;
+    invalidNamedArg?: string;
+  };
 }
 
 export interface ParsedCommand {
