@@ -6,44 +6,34 @@ import chalk from 'chalk';
 export class Logger {
   /**
    * Logs an info message.
-   * @param message - The message to log.
+   * @param args - The arguments to log.
    */
-  info(message: string): void {
-    console.log(`${chalk.blue('[INFO]')} ${this.getTimestamp()} ${message}`);
+  info(...args: unknown[]): void {
+    console.log(`${chalk.blue('[INFO]')} ${this.getTimestamp()}`, ...args);
   }
 
   /**
    * Logs a warning message.
-   * @param message - The message to log.
+   * @param args - The arguments to log.
    */
-  warn(message: string): void {
-    console.log(`${chalk.yellow('[WARN]')} ${this.getTimestamp()} ${message}`);
+  warn(...args: unknown[]): void {
+    console.log(`${chalk.yellow('[WARN]')} ${this.getTimestamp()}`, ...args);
   }
 
   /**
    * Logs an error message.
-   * @param message - The message to log.
+   * @param args - The arguments to log.
    */
-  error(message: string): void {
-    console.log(`${chalk.red('[ERROR]')} ${this.getTimestamp()} ${message}`);
+  error(...args: unknown[]): void {
+    console.log(`${chalk.red('[ERROR]')} ${this.getTimestamp()}`, ...args);
   }
 
   /**
    * Logs a debug message.
-   * @param message - The message to log.
+   * @param args - The arguments to log.
    */
-  debug(message: string): void {
-    console.log(`${chalk.gray('[DEBUG]')} ${this.getTimestamp()} ${message}`);
-  }
-
-  /**
-   * Logs a success message.
-   * @param message - The message to log.
-   */
-  success(message: string): void {
-    console.log(
-      `${chalk.green('[SUCCESS]')} ${this.getTimestamp()} ${message}`,
-    );
+  debug(...args: unknown[]): void {
+    console.log(`${chalk.gray('[DEBUG]')} ${this.getTimestamp()}`, ...args);
   }
 
   private getTimestamp(): string {

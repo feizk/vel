@@ -25,9 +25,9 @@ logger.debug('This is a debug message');
 
 ### Logger
 
-- `info(message: string)`: Logs an info message.
-- `warn(message: string)`: Logs a warning message.
-- `error(message: string)`: Logs an error message.
-- `debug(message: string)`: Logs a debug message.
+- `info(...args: unknown[])`: Logs an info message.
+- `warn(...args: unknown[])`: Logs a warning message.
+- `error(...args: unknown[])`: Logs an error message.
+- `debug(...args: unknown[])`: Logs a debug message.
 
 All messages include a timestamp and are colored accordingly.
