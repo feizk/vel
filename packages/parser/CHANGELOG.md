@@ -5,6 +5,15 @@
 
 ### Chores
 
+* **main:** release parser 1.4.2 ([43c267d](https://github.com/feizk/vel/commit/43c267d9c079c593977c886f8ba0a20c93e2e338))
+* **main:** release parser 1.4.2 ([848a132](https://github.com/feizk/vel/commit/848a132c5fcf23c194f11e96bca6b8d197c18dd4))
+* **parser:** added tsc & clean scripts ([b457ee0](https://github.com/feizk/vel/commit/b457ee0a45f544838c6c0ef485d82cb36f6d17e9))
+
+## [1.4.2](https://github.com/feizk/vel/compare/parser-v1.4.1...parser-v1.4.2) (2026-01-21)
+
+
+### Chores
+
 * **parser:** added tsc & clean scripts ([b457ee0](https://github.com/feizk/vel/commit/b457ee0a45f544838c6c0ef485d82cb36f6d17e9))
 
 ## [1.4.1](https://github.com/feizk/vel/compare/parser-v1.4.0...parser-v1.4.1) (2026-01-21)
