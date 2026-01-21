@@ -13,17 +13,14 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     outputs:
-      release_created: ${{ steps.release.outputs.release_created }}
-      tag_name: ${{ steps.release.outputs.tag_name }}
+      releases_created: ${{ steps.release.outputs.releases_created }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
-        with:
-          command: manifest
 
   publish:
     needs: release-please
-    if: ${{ needs.release-please.outputs.release_created }}
+    if: ${{ length(fromJson(needs.release-please.outputs.releases_created)) > 0 }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,6 +29,6 @@ jobs:
           node-version: 20
           registry-url: 'https://registry.npmjs.org'
       - run: pnpm install --frozen-lockfile
-      - run: pnpm publish --filter @feizk/parser
+      - run: pnpm -r publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
