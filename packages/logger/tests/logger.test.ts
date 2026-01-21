@@ -72,4 +72,40 @@ describe('Logger', () => {
     expect(calls[3]).toBe(42);
     expect(calls[4]).toEqual({ key: 'value' });
   });
+
+  it('should disable colors when enableColors is false', () => {
+    const noColorLogger = new Logger({ enableColors: false });
+    noColorLogger.info('test message');
+    const callArgs = consoleSpy.mock.calls[0][0];
+    expect(callArgs).toContain('[INFO]'); // Should not have ANSI codes
+    expect(callArgs).not.toContain('\u001b['); // ANSI escape code
+  });
+
+  it('should use locale timestamp format', () => {
+    const localeLogger = new Logger({ timestampFormat: 'locale' });
+    localeLogger.info('test');
+    const callArgs = consoleSpy.mock.calls[0][0];
+    expect(callArgs).toMatch(/\d{1,2}\/\d{1,2}\/\d{4}/); // Basic locale date check
+  });
+
+  it('should use custom timestamp function', () => {
+    const customLogger = new Logger({
+      timestampFormat: () => 'custom-time',
+    });
+    customLogger.info('test');
+    const callArgs = consoleSpy.mock.calls[0][0];
+    expect(callArgs).toContain('custom-time');
+  });
+
+  it('should use custom log format', () => {
+    const customLogger = new Logger({
+      logFormat: (level, timestamp, args) =>
+        `${timestamp} ${level}: ${args.join(' ')}`,
+    });
+    customLogger.warn('hello', 'world');
+    const callArgs = consoleSpy.mock.calls[0][0];
+    expect(callArgs).toMatch(
+      /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z \[WARN\]: hello world/,
+    );
+  });
 });
