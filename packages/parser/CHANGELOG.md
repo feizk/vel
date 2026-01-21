@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.3](https://github.com/feizk/vel/compare/parser-v1.4.2...parser-v1.4.3) (2026-01-21)
+
+
+### Chores
+
+* **main:** release parser 1.4.2 ([2d95126](https://github.com/feizk/vel/commit/2d951262fc84411b4bfbd76eae63860a026a79c6))
+* **main:** release parser 1.4.2 ([b9e9825](https://github.com/feizk/vel/commit/b9e98257c532cabfee516907be74165d6b51df45))
+
 ## [1.4.2](https://github.com/feizk/vel/compare/parser-v1.4.1...parser-v1.4.2) (2026-01-21)
 
 
