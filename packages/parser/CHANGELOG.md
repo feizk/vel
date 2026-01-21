@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/feizk/vel/compare/parser-v1.2.0...parser-v1.3.0) (2026-01-21)
+
+
+### Features
+
+* add automatic type coercion for parsed arguments ([b5beb7c](https://github.com/feizk/vel/commit/b5beb7c882cfacf922d9401656d66ef75a7be5e0))
+
 ## [1.2.0](https://github.com/feizk/vel/compare/parser-v1.1.0...parser-v1.2.0) (2026-01-21)
 
 
