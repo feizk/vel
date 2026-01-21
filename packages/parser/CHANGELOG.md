@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/feizk/vel/compare/parser-v1.3.0...parser-v1.4.0) (2026-01-21)
+
+
+### Features
+
+* quoted arguments ([4b18891](https://github.com/feizk/vel/commit/4b1889166be4ca107ecbfb4ed39c53ea3a1c6a30))
+
 ## [1.3.0](https://github.com/feizk/vel/compare/parser-v1.2.0...parser-v1.3.0) (2026-01-21)
 
 
