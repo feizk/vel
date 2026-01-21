@@ -36,6 +36,16 @@ export class Logger {
     console.log(`${chalk.gray('[DEBUG]')} ${this.getTimestamp()} ${message}`);
   }
 
+  /**
+   * Logs a success message.
+   * @param message - The message to log.
+   */
+  success(message: string): void {
+    console.log(
+      `${chalk.green('[SUCCESS]')} ${this.getTimestamp()} ${message}`,
+    );
+  }
+
   private getTimestamp(): string {
     return new Date().toISOString();
   }
