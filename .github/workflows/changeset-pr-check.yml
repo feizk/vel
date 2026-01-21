@@ -26,5 +26,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Fetch base branch
+        run: git fetch origin main:main
+
       - name: Check for changesets
         run: pnpm changeset status --since=main
