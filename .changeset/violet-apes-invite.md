@@ -1,0 +1,5 @@
+---
+'@feizk/logger': minor
+---
+
+- Created `src/types.ts` with `LoggerOptions` interface for `enableColors`, `timestampFormat`, and `logFormat` options\n- Created `src/utils.ts` with utility functions: `formatTimestamp`, `getColor`, and `formatLog`\n- Moved `Logger` class to `src/logger.ts` and made it configurable via constructor options with defaults\n- Updated `src/index.ts` to export `Logger` class and `LoggerOptions` type instead of containing the class\n- Removed the `success` method from `Logger` class (per user feedback)\n- Removed `[SUCCESS]` color mapping from `utils.ts`\n- Added tests in `tests/logger.test.ts` for disabling colors, locale timestamp, custom timestamp function, and custom log format\n- Removed success-related test from `tests/logger.test.ts`\n- Updated `README.md` with usage examples for new options and removed success method documentation\n- Ensured backward compatibility: existing `new Logger()` usage remains unchanged\n- All tests pass (10 tests) and build succeeds
