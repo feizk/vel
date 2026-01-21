@@ -60,7 +60,9 @@ console.log(result?.args); // { name: 'general' }
 ```typescript
 const parser = new Parser({ prefix: '!', argFormat: 'equals' });
 
-const result = parser.parse('!help filter category count=5 enabled=true name=general');
+const result = parser.parse(
+  '!help filter category count=5 enabled=true name=general',
+);
 console.log(result?.args); // { count: 5, enabled: true, name: 'general' }
 ```
 
@@ -133,7 +135,9 @@ const result = parser.parse('!help count(5) enabled(true) name(John)');
 Arguments containing spaces can be enclosed in double quotes:
 
 ```typescript
-const result = parser.parse('!help name("hello world") message="multi word value" --status "active now"');
+const result = parser.parse(
+  '!help name("hello world") message="multi word value" --status "active now"',
+);
 // result.args: { name: 'hello world', message: 'multi word value', status: 'active now' }
 ```
 
