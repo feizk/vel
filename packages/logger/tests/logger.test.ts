@@ -27,33 +27,33 @@ describe('Logger', () => {
 
   it('should have info method', () => {
     logger.info('test message');
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[INFO]'));
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('test message'),
+      expect.stringContaining('[INFO]'),
+      'test message',
     );
   });
 
   it('should have warn method', () => {
     logger.warn('test message');
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[WARN]'));
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('test message'),
+      expect.stringContaining('[WARN]'),
+      'test message',
     );
   });
 
   it('should have error method', () => {
     logger.error('test message');
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[ERROR]'));
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('test message'),
+      expect.stringContaining('[ERROR]'),
+      'test message',
     );
   });
 
   it('should have debug method', () => {
     logger.debug('test message');
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[DEBUG]'));
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('test message'),
+      expect.stringContaining('[DEBUG]'),
+      'test message',
     );
   });
 
@@ -61,5 +61,15 @@ describe('Logger', () => {
     logger.info('test');
     const callArgs = consoleSpy.mock.calls[0][0];
     expect(callArgs).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
+  });
+
+  it('should handle multiple arguments', () => {
+    logger.info('hello', 'world', 42, { key: 'value' });
+    const calls = consoleSpy.mock.calls[0];
+    expect(calls[0]).toMatch(/\[INFO\]/);
+    expect(calls[1]).toBe('hello');
+    expect(calls[2]).toBe('world');
+    expect(calls[3]).toBe(42);
+    expect(calls[4]).toEqual({ key: 'value' });
   });
 });
