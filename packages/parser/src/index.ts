@@ -13,6 +13,19 @@ export class Parser {
   };
 
   /**
+   * Coerces a string value to its appropriate type (number, boolean, or string).
+   * @param value - The string value to coerce.
+   * @returns The coerced value.
+   */
+  private coerceValue(value: string): string | number | boolean {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    const num = parseFloat(value);
+    if (!isNaN(num) && num.toString() === value) return num;
+    return value;
+  }
+
+  /**
    * Creates an instance of Parser.
    * @param {ParserOptions} options - The configuration options for the parser.
    * @throws {Error} If prefix is not provided or empty.
@@ -91,7 +104,7 @@ export class Parser {
 
     const command = parts[0];
     const subcommands: string[] = [];
-    const args: Record<string, string> = {};
+    const args: Record<string, unknown> = {};
     const errors: string[] = [];
 
     let argStartIndex = -1;
@@ -138,7 +151,7 @@ export class Parser {
           if (keyMatch && i + 1 < parts.length) {
             const key = keyMatch[1];
             const value = parts[i + 1];
-            args[key] = value;
+            args[key] = this.coerceValue(value);
           } else {
             errors.push(
               this.options.errorMessages.invalidNamedArg
@@ -153,7 +166,7 @@ export class Parser {
           const match = parts[i].match(argRegex);
           if (match) {
             const [, key, value] = match;
-            args[key] = value;
+            args[key] = this.coerceValue(value);
           } else {
             errors.push(
               this.options.errorMessages.invalidArgFormat.replace(

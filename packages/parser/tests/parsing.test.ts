@@ -85,4 +85,64 @@ describe('Parser Parsing', () => {
       originalMessage: 'v?help,filter,category,name(general)',
     });
   });
+
+  it('should coerce number values', () => {
+    const parser = new Parser({ prefix: '!' });
+    const result = parser.parse('!help count(5) rate(3.14)');
+    expect(result).toEqual({
+      prefixUsed: '!',
+      command: 'help',
+      subcommands: [],
+      args: { count: 5, rate: 3.14 },
+      originalMessage: '!help count(5) rate(3.14)',
+    });
+  });
+
+  it('should coerce boolean values', () => {
+    const parser = new Parser({ prefix: '!' });
+    const result = parser.parse('!help enabled(true) disabled(false)');
+    expect(result).toEqual({
+      prefixUsed: '!',
+      command: 'help',
+      subcommands: [],
+      args: { enabled: true, disabled: false },
+      originalMessage: '!help enabled(true) disabled(false)',
+    });
+  });
+
+  it('should keep string values as strings', () => {
+    const parser = new Parser({ prefix: '!' });
+    const result = parser.parse('!help name(John) status(active)');
+    expect(result).toEqual({
+      prefixUsed: '!',
+      command: 'help',
+      subcommands: [],
+      args: { name: 'John', status: 'active' },
+      originalMessage: '!help name(John) status(active)',
+    });
+  });
+
+  it('should coerce with equals format', () => {
+    const parser = new Parser({ prefix: '!', argFormat: 'equals' });
+    const result = parser.parse('!help count=5 enabled=true name=John');
+    expect(result).toEqual({
+      prefixUsed: '!',
+      command: 'help',
+      subcommands: [],
+      args: { count: 5, enabled: true, name: 'John' },
+      originalMessage: '!help count=5 enabled=true name=John',
+    });
+  });
+
+  it('should coerce with named format', () => {
+    const parser = new Parser({ prefix: '!', argFormat: 'named' });
+    const result = parser.parse('!help --count 5 --enabled true --name John');
+    expect(result).toEqual({
+      prefixUsed: '!',
+      command: 'help',
+      subcommands: [],
+      args: { count: 5, enabled: true, name: 'John' },
+      originalMessage: '!help --count 5 --enabled true --name John',
+    });
+  });
 });

@@ -60,8 +60,8 @@ console.log(result?.args); // { name: 'general' }
 ```typescript
 const parser = new Parser({ prefix: '!', argFormat: 'equals' });
 
-const result = parser.parse('!help filter category name=general status=active');
-console.log(result?.args); // { name: 'general', status: 'active' }
+const result = parser.parse('!help filter category count=5 enabled=true name=general');
+console.log(result?.args); // { count: 5, enabled: true, name: 'general' }
 ```
 
 ### With Named Format
@@ -70,9 +70,9 @@ console.log(result?.args); // { name: 'general', status: 'active' }
 const parser = new Parser({ prefix: '!', argFormat: 'named' });
 
 const result = parser.parse(
-  '!help filter category --name general --status active',
+  '!help filter category --count 5 --enabled true --name general',
 );
-console.log(result?.args); // { name: 'general', status: 'active' }
+console.log(result?.args); // { count: 5, enabled: true, name: 'general' }
 ```
 
 ### Custom Error Messages
@@ -106,7 +106,7 @@ console.log(result?.errors); // ['Oops! "invalidArg" is not a valid argument']
 - `prefixUsed`: `string` - The prefix that was matched.
 - `command`: `string` - The command name.
 - `subcommands`: `string[]` - The subcommands before typed arguments.
-- `args`: `Record<string, string>` - The typed arguments as key-value pairs.
+- `args`: `Record<string, unknown>` - The typed arguments as key-value pairs, with automatic type coercion (numbers, booleans, strings).
 - `originalMessage`: `string` - The original message.
 - `errors?`: `string[]` - Any parsing errors, if present.
 
@@ -114,6 +114,19 @@ console.log(result?.errors); // ['Oops! "invalidArg" is not a valid argument']
 
 - `constructor(options: ParserOptions)`
 - `parse(message: string): ParsedCommand | null` - Parses the message. Returns `null` if no prefix matches or invalid message.
+
+## Type Coercion
+
+The parser automatically coerces argument values to their appropriate types:
+
+- Strings that represent numbers (e.g., "5", "3.14") are converted to numbers.
+- "true" and "false" are converted to booleans.
+- Other values remain as strings.
+
+```typescript
+const result = parser.parse('!help count(5) enabled(true) name(John)');
+// result.args: { count: 5, enabled: true, name: 'John' }
+```
 
 ## Argument Formats
 

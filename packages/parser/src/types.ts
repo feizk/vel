@@ -14,7 +14,7 @@ export interface ParsedCommand {
   prefixUsed: string;
   command: string;
   subcommands: string[];
-  args: Record<string, string>;
+  args: Record<string, unknown>;
   originalMessage: string;
   errors?: string[];
 }
