@@ -14,32 +14,20 @@
     "test": "pnpm --filter '*' test:run",
     "build": "pnpm --filter '*' build",
     "clean": "pnpm --filter '*' clean",
-    "tsc": "pnpm --filter '*' tsc",
-    "cz": "cz",
-    "prepare": "husky"
+    "tsc": "pnpm --filter '*' tsc"
   },
   "keywords": [],
   "author": "feizk",
   "license": "MIT",
-  "config": {
-    "commitizen": {
-      "path": "cz-conventional-changelog"
-    }
-  },
   "packageManager": "pnpm@10.23.0",
   "devDependencies": {
-    "@commitlint/cli": "^20.3.1",
-    "@commitlint/config-conventional": "^20.3.1",
     "@eslint/js": "^9.39.2",
     "@typescript-eslint/eslint-plugin": "^8.53.1",
     "@typescript-eslint/parser": "^8.53.1",
-    "commitizen": "^4.3.1",
-    "cz-conventional-changelog": "^3.3.0",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "globals": "^17.0.0",
-    "husky": "^9.1.7",
     "prettier": "^3.8.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
