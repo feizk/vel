@@ -1,0 +1,5 @@
+---
+'@feizk/logger': minor
+---
+
+Yes
