@@ -1,5 +1,12 @@
-import type { LoggerOptions, LogLevel } from './types';
-import { formatTimestamp, formatLog } from './utils';
+import type { LoggerOptions, LogLevel, TimestampTypes } from './types';
+import { formatTimestamp, formatLog, TIMESTAMP_TYPES } from './utils';
+
+import type { TimestampType } from './types';
+
+const defaultFormatTimestamp = (
+  types: TimestampTypes,
+  date: Date = new Date(),
+): [TimestampType, string] => [types.ISO, date.toISOString()];
 
 const LOG_LEVEL_PRIORITIES: Record<LogLevel, number> = {
   debug: 0,
@@ -13,23 +20,23 @@ const LOG_LEVEL_PRIORITIES: Record<LogLevel, number> = {
  */
 export class Logger {
   private options: LoggerOptions;
-  private logLevel: LogLevel;
+  private level: LogLevel;
 
   constructor(options: LoggerOptions = {}) {
     this.options = {
       enableColors: options.enableColors ?? true,
-      timestampFormat: options.timestampFormat ?? 'iso',
-      logFormat: options.logFormat,
+      formatTimestamp: options.formatTimestamp ?? defaultFormatTimestamp,
+      formatLog: options.formatLog,
     };
-    this.logLevel = options.logLevel ?? 'debug';
+    this.level = options.level ?? 'debug';
   }
 
   /**
    * Sets the minimum log level for filtering messages.
    * @param level - The log level to set.
    */
-  setLogLevel(level: LogLevel): void {
-    this.logLevel = level;
+  setLevel(level: LogLevel): void {
+    this.level = level;
   }
 
   /**
@@ -38,7 +45,7 @@ export class Logger {
    * @returns True if the message should be logged.
    */
   private shouldLog(level: LogLevel): boolean {
-    return LOG_LEVEL_PRIORITIES[level] >= LOG_LEVEL_PRIORITIES[this.logLevel];
+    return LOG_LEVEL_PRIORITIES[level] >= LOG_LEVEL_PRIORITIES[this.level];
   }
 
   /**
@@ -47,7 +54,10 @@ export class Logger {
    */
   info(...args: unknown[]): void {
     if (!this.shouldLog('info')) return;
-    const timestamp = formatTimestamp(this.options);
+    const timestamp = formatTimestamp(
+      this.options.formatTimestamp!,
+      TIMESTAMP_TYPES,
+    );
     console.log(...formatLog('[INFO]', timestamp, args, this.options));
   }
 
@@ -57,7 +67,10 @@ export class Logger {
    */
   warn(...args: unknown[]): void {
     if (!this.shouldLog('warn')) return;
-    const timestamp = formatTimestamp(this.options);
+    const timestamp = formatTimestamp(
+      this.options.formatTimestamp!,
+      TIMESTAMP_TYPES,
+    );
     console.log(...formatLog('[WARN]', timestamp, args, this.options));
   }
 
@@ -67,7 +80,10 @@ export class Logger {
    */
   error(...args: unknown[]): void {
     if (!this.shouldLog('error')) return;
-    const timestamp = formatTimestamp(this.options);
+    const timestamp = formatTimestamp(
+      this.options.formatTimestamp!,
+      TIMESTAMP_TYPES,
+    );
     console.log(...formatLog('[ERROR]', timestamp, args, this.options));
   }
 
@@ -77,7 +93,10 @@ export class Logger {
    */
   debug(...args: unknown[]): void {
     if (!this.shouldLog('debug')) return;
-    const timestamp = formatTimestamp(this.options);
+    const timestamp = formatTimestamp(
+      this.options.formatTimestamp!,
+      TIMESTAMP_TYPES,
+    );
     console.log(...formatLog('[DEBUG]', timestamp, args, this.options));
   }
 }

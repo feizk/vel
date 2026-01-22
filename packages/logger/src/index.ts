@@ -1,2 +1,8 @@
 export { Logger } from './logger';
-export type { LoggerOptions, LogLevel } from './types';
+export { TIMESTAMP_TYPES } from './utils';
+export type {
+  LoggerOptions,
+  LogLevel,
+  TimestampTypes,
+  TimestampType,
+} from './types';

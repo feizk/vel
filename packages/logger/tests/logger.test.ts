@@ -7,7 +7,7 @@ import {
   afterEach,
   type MockInstance,
 } from 'vitest';
-import { Logger } from '../src/index';
+import { Logger, TIMESTAMP_TYPES } from '../src/index';
 
 describe('Logger', () => {
   let logger: Logger;
@@ -82,7 +82,9 @@ describe('Logger', () => {
   });
 
   it('should use locale timestamp format', () => {
-    const localeLogger = new Logger({ timestampFormat: 'locale' });
+    const localeLogger = new Logger({
+      formatTimestamp: (types) => [types.Locale, new Date().toLocaleString()],
+    });
     localeLogger.info('test');
     const callArgs = consoleSpy.mock.calls[0][0];
     expect(callArgs).toMatch(/\d{1,2}\/\d{1,2}\/\d{4}/); // Basic locale date check
@@ -90,7 +92,7 @@ describe('Logger', () => {
 
   it('should use custom timestamp function', () => {
     const customLogger = new Logger({
-      timestampFormat: () => 'custom-time',
+      formatTimestamp: () => [TIMESTAMP_TYPES.Custom, 'custom-time'],
     });
     customLogger.info('test');
     const callArgs = consoleSpy.mock.calls[0][0];
@@ -99,7 +101,7 @@ describe('Logger', () => {
 
   it('should use custom log format', () => {
     const customLogger = new Logger({
-      logFormat: (level, timestamp, args) =>
+      formatLog: (level, timestamp, args) =>
         `${timestamp} ${level}: ${args.join(' ')}`,
     });
     customLogger.warn('hello', 'world');
@@ -119,7 +121,7 @@ describe('Logger', () => {
   });
 
   it('should filter logs below the set level', () => {
-    const infoLogger = new Logger({ logLevel: 'info' });
+    const infoLogger = new Logger({ level: 'info' });
     infoLogger.debug('debug message');
     expect(consoleSpy).not.toHaveBeenCalled();
 
@@ -131,7 +133,7 @@ describe('Logger', () => {
   });
 
   it('should allow all levels when set to debug', () => {
-    const debugLogger = new Logger({ logLevel: 'debug' });
+    const debugLogger = new Logger({ level: 'debug' });
     debugLogger.debug('debug');
     debugLogger.info('info');
     debugLogger.warn('warn');
@@ -140,7 +142,7 @@ describe('Logger', () => {
   });
 
   it('should filter debug and info when set to warn', () => {
-    const warnLogger = new Logger({ logLevel: 'warn' });
+    const warnLogger = new Logger({ level: 'warn' });
     warnLogger.debug('debug');
     warnLogger.info('info');
     expect(consoleSpy).not.toHaveBeenCalled();
@@ -151,7 +153,7 @@ describe('Logger', () => {
   });
 
   it('should only log errors when set to error', () => {
-    const errorLogger = new Logger({ logLevel: 'error' });
+    const errorLogger = new Logger({ level: 'error' });
     errorLogger.debug('debug');
     errorLogger.info('info');
     errorLogger.warn('warn');
@@ -166,11 +168,11 @@ describe('Logger', () => {
 
   it('should allow changing log level dynamically', () => {
     const logger = new Logger();
-    logger.setLogLevel('error');
+    logger.setLevel('error');
     logger.debug('debug');
     expect(consoleSpy).not.toHaveBeenCalled();
 
-    logger.setLogLevel('debug');
+    logger.setLevel('debug');
     logger.debug('debug');
     expect(consoleSpy).toHaveBeenCalledWith(
       expect.stringContaining('[DEBUG]'),

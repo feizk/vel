@@ -1,21 +1,19 @@
 import chalk from 'chalk';
-import type { LoggerOptions } from './types';
+import type { LoggerOptions, TimestampTypes } from './types';
+
+export const TIMESTAMP_TYPES: TimestampTypes = {
+  ISO: 'iso',
+  Locale: 'locale',
+  Custom: 'custom',
+};
 
 export function formatTimestamp(
-  options: LoggerOptions,
+  formatTimestampFn: NonNullable<LoggerOptions['formatTimestamp']>,
+  types: TimestampTypes,
   date: Date = new Date(),
 ): string {
-  const { timestampFormat = 'iso' } = options;
-  if (typeof timestampFormat === 'function') {
-    return timestampFormat(date);
-  }
-  switch (timestampFormat) {
-    case 'locale':
-      return date.toLocaleString();
-    case 'iso':
-    default:
-      return date.toISOString();
-  }
+  const [, timestamp] = formatTimestampFn(types, date);
+  return timestamp;
 }
 
 export function getColor(level: string, enableColors: boolean): string {
@@ -35,10 +33,10 @@ export function formatLog(
   args: unknown[],
   options: LoggerOptions,
 ): [string, ...unknown[]] {
-  const { logFormat, enableColors = true } = options;
+  const { formatLog, enableColors = true } = options;
   const coloredLevel = getColor(level, enableColors);
-  if (logFormat) {
-    return [logFormat(coloredLevel, timestamp, args)];
+  if (formatLog) {
+    return [formatLog(coloredLevel, timestamp, args)];
   }
   return [`${coloredLevel} ${timestamp}`, ...args];
 }

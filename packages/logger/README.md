@@ -28,9 +28,9 @@ Customize the logger with constructor options:
 ```typescript
 const logger = new Logger({
   enableColors: true, // Default: true
-  timestampFormat: 'iso', // 'iso' | 'locale' | custom function, Default: 'iso'
-  logFormat: undefined, // Custom formatter function, Default: undefined
-  logLevel: 'debug', // 'debug' | 'info' | 'warn' | 'error', Default: 'debug'
+  formatTimestamp: undefined, // Custom timestamp formatter function, Default: ISO format
+  formatLog: undefined, // Custom log formatter function, Default: undefined
+  level: 'debug', // 'debug' | 'info' | 'warn' | 'error', Default: 'debug'
 });
 ```
 
@@ -41,15 +41,22 @@ const logger = new Logger({
 const noColorLogger = new Logger({ enableColors: false });
 
 // Use locale timestamp
-const localeLogger = new Logger({ timestampFormat: 'locale' });
+const localeLogger = new Logger({
+  formatTimestamp: (types) => [types.Locale, new Date().toLocaleString()],
+});
+
+// Custom timestamp
+const customLogger = new Logger({
+  formatTimestamp: () => [TIMESTAMP_TYPES.Custom, 'custom-time'],
+});
 
 // Filter logs below info level
-const infoLogger = new Logger({ logLevel: 'info' });
+const infoLogger = new Logger({ level: 'info' });
 infoLogger.debug('Not logged');
 infoLogger.info('Logged'); // and higher
 
 // Change level dynamically
-logger.setLogLevel('error');
+logger.setLevel('error');
 ```
 
 ## API
@@ -60,6 +67,6 @@ logger.setLogLevel('error');
 - `warn(...args: unknown[])`: Logs a warning message.
 - `error(...args: unknown[])`: Logs an error message.
 - `debug(...args: unknown[])`: Logs a debug message.
-- `setLogLevel(level: LogLevel)`: Sets the minimum log level for filtering messages.
+- `setLevel(level: LogLevel)`: Sets the minimum log level for filtering messages.
 
 All messages include a timestamp and are colored accordingly (unless disabled via options).
