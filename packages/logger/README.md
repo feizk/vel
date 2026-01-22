@@ -31,6 +31,11 @@ const logger = new Logger({
   formatTimestamp: undefined, // Custom timestamp formatter function, Default: ISO format
   formatLog: undefined, // Custom log formatter function, Default: undefined
   level: 'debug', // 'debug' | 'info' | 'warn' | 'error', Default: 'debug'
+  discord: {
+    enable: false, // Enable Discord transport
+    webhookURL: '', // Discord webhook URL
+    formatEmbed: undefined, // Custom embed formatter function
+  },
 });
 ```
 
@@ -57,6 +62,28 @@ infoLogger.info('Logged'); // and higher
 
 // Change level dynamically
 logger.setLevel('error');
+
+// Enable Discord transport
+const discordLogger = new Logger({
+  discord: {
+    enable: true,
+    webhookURL: 'https://discord.com/api/webhooks/123456789/abcdef',
+  },
+});
+discordLogger.error('This will be sent to Discord');
+
+// Custom embed formatting
+const customDiscordLogger = new Logger({
+  discord: {
+    enable: true,
+    webhookURL: 'https://discord.com/api/webhooks/123456789/abcdef',
+    formatEmbed: (level, timestamp, message) => ({
+      title: `${level} - Custom`,
+      description: `**Timestamp:** ${timestamp}\n**Message:** ${message}`,
+      color: 0xff0000, // Red
+    }),
+  },
+});
 ```
 
 ## API

@@ -9,6 +9,9 @@ import {
 } from 'vitest';
 import { Logger, TIMESTAMP_TYPES } from '../src/index';
 
+const fetchMock = vi.fn();
+global.fetch = fetchMock;
+
 describe('Logger', () => {
   let logger: Logger;
   let consoleSpy: MockInstance<
@@ -19,10 +22,12 @@ describe('Logger', () => {
   beforeEach(() => {
     logger = new Logger();
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    fetchMock.mockResolvedValue({} as Response);
   });
 
   afterEach(() => {
     consoleSpy.mockRestore();
+    fetchMock.mockClear();
   });
 
   it('should have info method', () => {
@@ -178,5 +183,93 @@ describe('Logger', () => {
       expect.stringContaining('[DEBUG]'),
       'debug',
     );
+  });
+});
+
+describe('Discord Transport', () => {
+  let consoleSpy: MockInstance<
+    [message?: unknown, ...optionalParams: unknown[]],
+    void
+  >;
+
+  beforeEach(() => {
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    fetchMock.mockResolvedValue({} as Response);
+  });
+
+  afterEach(() => {
+    consoleSpy.mockRestore();
+    fetchMock.mockClear();
+  });
+
+  it('should send to Discord when enabled and valid URL', () => {
+    const discordLogger = new Logger({
+      discord: {
+        enable: true,
+        webhookURL: 'https://discord.com/api/webhooks/123/abc',
+      },
+    });
+    discordLogger.info('test message');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://discord.com/api/webhooks/123/abc',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: expect.stringContaining('"title":"INFO-'),
+      }),
+    );
+  });
+
+  it('should not send to Discord when disabled', () => {
+    const discordLogger = new Logger({
+      discord: {
+        enable: false,
+        webhookURL: 'https://discord.com/api/webhooks/123/abc',
+      },
+    });
+    discordLogger.info('test message');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('should not send to Discord when invalid URL', () => {
+    const discordLogger = new Logger({
+      discord: {
+        enable: true,
+        webhookURL: 'invalid-url',
+      },
+    });
+    discordLogger.info('test message');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('should use custom formatEmbed if provided', () => {
+    const customEmbed = { title: 'Custom', description: 'Custom desc' };
+    const discordLogger = new Logger({
+      discord: {
+        enable: true,
+        webhookURL: 'https://discord.com/api/webhooks/123/abc',
+        formatEmbed: () => customEmbed,
+      },
+    });
+    discordLogger.warn('test');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://discord.com/api/webhooks/123/abc',
+      expect.objectContaining({
+        body: JSON.stringify({ embeds: [customEmbed] }),
+      }),
+    );
+  });
+
+  it('should handle multiple arguments in message', () => {
+    const discordLogger = new Logger({
+      discord: {
+        enable: true,
+        webhookURL: 'https://discord.com/api/webhooks/123/abc',
+      },
+    });
+    discordLogger.error('hello', 'world', 42);
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    expect(body.embeds[0].title).toMatch(/^ERROR-[A-Z0-9]{8}$/);
+    expect(body.embeds[0].description).toBe('hello world 42');
   });
 });

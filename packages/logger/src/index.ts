@@ -5,4 +5,5 @@ export type {
   LogLevel,
   TimestampTypes,
   TimestampType,
+  DiscordOptions,
 } from './types';
