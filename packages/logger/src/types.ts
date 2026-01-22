@@ -8,6 +8,16 @@ export interface TimestampTypes {
   Custom: 'custom';
 }
 
+export interface DiscordOptions {
+  enable: boolean;
+  webhookURL: string;
+  formatEmbed?: (
+    level: LogLevel,
+    timestamp: string,
+    message: string,
+  ) => Record<string, unknown>;
+}
+
 export interface LoggerOptions {
   enableColors?: boolean;
   formatTimestamp?: (
@@ -16,4 +26,5 @@ export interface LoggerOptions {
   ) => [TimestampType, string];
   formatLog?: (level: string, timestamp: string, args: unknown[]) => string;
   level?: LogLevel;
+  discord?: DiscordOptions;
 }

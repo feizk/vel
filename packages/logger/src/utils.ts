@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import type { LoggerOptions, TimestampTypes } from './types';
+import type { LoggerOptions, TimestampTypes, LogLevel } from './types';
 
 export const TIMESTAMP_TYPES: TimestampTypes = {
   ISO: 'iso',
@@ -25,6 +25,20 @@ export function getColor(level: string, enableColors: boolean): string {
     '[DEBUG]': chalk.gray(level),
   };
   return colors[level] || level;
+}
+
+export function getDiscordColor(level: LogLevel): number {
+  const colors: Record<LogLevel, number> = {
+    debug: 0x95a5a6,
+    info: 0x3498db,
+    warn: 0xf39c12,
+    error: 0xe74c3c,
+  };
+  return colors[level];
+}
+
+export function generateId(): string {
+  return Math.random().toString(36).substr(2, 8).toUpperCase();
 }
 
 export function formatLog(

@@ -1,5 +1,11 @@
 import type { LoggerOptions, LogLevel, TimestampTypes } from './types';
-import { formatTimestamp, formatLog, TIMESTAMP_TYPES } from './utils';
+import {
+  formatTimestamp,
+  formatLog,
+  TIMESTAMP_TYPES,
+  getDiscordColor,
+  generateId,
+} from './utils';
 
 import type { TimestampType } from './types';
 
@@ -27,6 +33,7 @@ export class Logger {
       enableColors: options.enableColors ?? true,
       formatTimestamp: options.formatTimestamp ?? defaultFormatTimestamp,
       formatLog: options.formatLog,
+      discord: options.discord,
     };
     this.level = options.level ?? 'debug';
   }
@@ -37,6 +44,48 @@ export class Logger {
    */
   setLevel(level: LogLevel): void {
     this.level = level;
+  }
+
+  /**
+   * Sends a log message to Discord via webhook if configured.
+   * @param level - The log level.
+   * @param timestamp - The formatted timestamp.
+   * @param args - The log arguments.
+   */
+  private async sendToDiscord(
+    level: LogLevel,
+    timestamp: string,
+    args: unknown[],
+  ): Promise<void> {
+    const discord = this.options.discord;
+    if (!discord?.enable) return;
+
+    try {
+      new URL(discord.webhookURL);
+    } catch {
+      return;
+    }
+
+    const message = args
+      .map((arg) => (typeof arg === 'string' ? arg : JSON.stringify(arg)))
+      .join(' ');
+
+    const title = `${level.toUpperCase()}-${generateId()}`;
+
+    const embed = discord.formatEmbed
+      ? discord.formatEmbed(level, timestamp, message)
+      : {
+          title,
+          description: message,
+          timestamp: new Date().toISOString(),
+          color: getDiscordColor(level),
+        };
+
+    await fetch(discord.webhookURL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ embeds: [embed] }),
+    }).catch(() => {});
   }
 
   /**
@@ -59,6 +108,7 @@ export class Logger {
       TIMESTAMP_TYPES,
     );
     console.log(...formatLog('[INFO]', timestamp, args, this.options));
+    this.sendToDiscord('info', timestamp, args);
   }
 
   /**
@@ -72,6 +122,7 @@ export class Logger {
       TIMESTAMP_TYPES,
     );
     console.log(...formatLog('[WARN]', timestamp, args, this.options));
+    this.sendToDiscord('warn', timestamp, args);
   }
 
   /**
@@ -85,6 +136,7 @@ export class Logger {
       TIMESTAMP_TYPES,
     );
     console.log(...formatLog('[ERROR]', timestamp, args, this.options));
+    this.sendToDiscord('error', timestamp, args);
   }
 
   /**
@@ -98,5 +150,6 @@ export class Logger {
       TIMESTAMP_TYPES,
     );
     console.log(...formatLog('[DEBUG]', timestamp, args, this.options));
+    this.sendToDiscord('debug', timestamp, args);
   }
 }
