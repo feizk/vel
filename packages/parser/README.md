@@ -15,7 +15,9 @@ import { Parser } from '@feizk/parser';
 
 const parser = new Parser({ prefix: '!' });
 
-const result = parser.parse('!help filter category name(general) status(active)');
+const result = parser.parse(
+  '!help filter category name(general) status(active)',
+);
 
 if (result) {
   console.log(result.command); // 'help'

@@ -27,10 +27,10 @@ Customize the logger with constructor options:
 
 ```typescript
 const logger = new Logger({
-  enableColors: true,        // Default: true
-  timestampFormat: 'iso',    // 'iso' | 'locale' | custom function, Default: 'iso'
-  logFormat: undefined,      // Custom formatter function, Default: undefined
-  logLevel: 'debug',         // 'debug' | 'info' | 'warn' | 'error', Default: 'debug'
+  enableColors: true, // Default: true
+  timestampFormat: 'iso', // 'iso' | 'locale' | custom function, Default: 'iso'
+  logFormat: undefined, // Custom formatter function, Default: undefined
+  logLevel: 'debug', // 'debug' | 'info' | 'warn' | 'error', Default: 'debug'
 });
 ```
 
