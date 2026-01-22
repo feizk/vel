@@ -15,138 +15,36 @@ import { Parser } from '@feizk/parser';
 
 const parser = new Parser({ prefix: '!' });
 
-const result = parser.parse(
-  '!help filter category name(general) status(active)',
-);
+const result = parser.parse('!help filter category name(general) status(active)');
 
 if (result) {
   console.log(result.command); // 'help'
   console.log(result.subcommands); // ['filter', 'category']
   console.log(result.args); // { name: 'general', status: 'active' }
-  console.log(result.prefixUsed); // '!'
 }
 ```
 
-### With Multiple Prefixes
+### Options
 
-```typescript
-const parser = new Parser({ prefix: ['!', '?'] });
+- `prefix`: `string | string[]` - Required. The prefix(es) to match.
+- `caseSensitive?`: `boolean` - Case sensitivity for prefix matching. Default: `false`.
+- `delimiter?`: `string` - Argument delimiter. Default: `' '`.
+- `argFormat?`: `'typed' | 'equals' | 'named'` - Argument format. Default: `'typed'`.
+- `errorMessages?`: Custom error messages.
 
-const result = parser.parse('?help');
-console.log(result?.prefixUsed); // '?'
-```
+### Argument Formats
 
-### Case Insensitive
-
-```typescript
-const parser = new Parser({ prefix: '!', caseSensitive: false });
-
-const result = parser.parse('!HELP');
-console.log(result?.command); // 'HELP'
-```
-
-### Custom Delimiter
-
-```typescript
-const parser = new Parser({ prefix: '!', delimiter: ',' });
-
-const result = parser.parse('!help,filter,category,name(general)');
-console.log(result?.subcommands); // ['filter', 'category']
-console.log(result?.args); // { name: 'general' }
-```
-
-### With Equals Format
-
-```typescript
-const parser = new Parser({ prefix: '!', argFormat: 'equals' });
-
-const result = parser.parse(
-  '!help filter category count=5 enabled=true name=general',
-);
-console.log(result?.args); // { count: 5, enabled: true, name: 'general' }
-```
-
-### With Named Format
-
-```typescript
-const parser = new Parser({ prefix: '!', argFormat: 'named' });
-
-const result = parser.parse(
-  '!help filter category --count 5 --enabled true --name general',
-);
-console.log(result?.args); // { count: 5, enabled: true, name: 'general' }
-```
-
-### Custom Error Messages
-
-```typescript
-const parser = new Parser({
-  prefix: '!',
-  errorMessages: {
-    invalidArgFormat: 'Oops! "{part}" is not a valid argument',
-    invalidNamedArg: 'Bad named arg "{part}" found at position {index}',
-    prefixRequired: 'You forgot to set a prefix!',
-  },
-});
-
-const result = parser.parse('!help invalidArg');
-console.log(result?.errors); // ['Oops! "invalidArg" is not a valid argument']
-```
-
-## API
-
-### ParserOptions
-
-- `prefix`: `string | string[]` - The prefix(es) to match. Required.
-- `caseSensitive?`: `boolean` - Whether prefix matching is case sensitive. Default: `false`.
-- `delimiter?`: `string` - The delimiter to split arguments. Default: `' '`.
-- `argFormat?`: `'typed' | 'equals' | 'named'` - The format for arguments. Options: 'typed' for `type(value)`, 'equals' for `key=value`, 'named' for `--key value`. Default: `'typed'`.
-- `errorMessages?`: `{ prefixRequired?, invalidArgFormat?, invalidNamedArg? }` - Custom error message templates. Supports placeholders `{part}` and `{index}`. Default messages provided if not specified.
-
-### ParsedCommand
-
-- `prefixUsed`: `string` - The prefix that was matched.
-- `command`: `string` - The command name.
-- `subcommands`: `string[]` - The subcommands before typed arguments.
-- `args`: `Record<string, unknown>` - The typed arguments as key-value pairs, with automatic type coercion (numbers, booleans, strings).
-- `originalMessage`: `string` - The original message.
-- `errors?`: `string[]` - Any parsing errors, if present.
-
-### Parser
-
-- `constructor(options: ParserOptions)`
-- `parse(message: string): ParsedCommand | null` - Parses the message. Returns `null` if no prefix matches or invalid message.
+- **typed**: `key(value)` or `key("multi word")`
+- **equals**: `key=value` or `key="multi word"`
+- **named**: `--key value` or `--key "multi word"`
 
 ## Type Coercion
 
-The parser automatically coerces argument values to their appropriate types:
+Arguments are automatically coerced: strings like "5" to numbers, "true"/"false" to booleans.
 
-- Strings that represent numbers (e.g., "5", "3.14") are converted to numbers.
-- "true" and "false" are converted to booleans.
-- Other values remain as strings.
+## API
 
-```typescript
-const result = parser.parse('!help count(5) enabled(true) name(John)');
-// result.args: { count: 5, enabled: true, name: 'John' }
-```
+- `Parser(options: ParserOptions)`
+- `parse(message: string): ParsedCommand | null`
 
-## Quoted Arguments
-
-Arguments containing spaces can be enclosed in double quotes:
-
-```typescript
-const result = parser.parse(
-  '!help name("hello world") message="multi word value" --status "active now"',
-);
-// result.args: { name: 'hello world', message: 'multi word value', status: 'active now' }
-```
-
-## Argument Formats
-
-The parser supports different argument formats, configurable via `argFormat`:
-
-- **typed** (default): `type(value)`, e.g., `name(general)` or `name("multi word")`
-- **equals**: `key=value`, e.g., `name=general` or `name="multi word"`
-- **named**: `--key value`, e.g., `--name general` or `--name "multi word"`
-
-Arguments containing spaces must be enclosed in double quotes. The parser tokenizes the input respecting quotes, identifies the command, collects subcommands until an argument is found, and parses arguments into an object. Invalid formats are rejected.
+ParsedCommand includes: `prefixUsed`, `command`, `subcommands`, `args`, `originalMessage`, `errors?`.
