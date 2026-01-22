@@ -1,5 +1,11 @@
 # @feizk/parser
 
+## 1.5.1
+
+### Patch Changes
+
+- 2de0821: Added the "files" property to execlude unnecessary files / folders
+
 ## 1.5.0
 
 ### Minor Changes
