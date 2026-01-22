@@ -20,6 +20,10 @@
   "devDependencies": {
     "vitest": "^1.6.1"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "keywords": [
     "discord",
     "parser",
