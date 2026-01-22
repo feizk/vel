@@ -24,6 +24,10 @@
     "@types/node": "^20.0.0",
     "vitest": "^1.6.1"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "keywords": [
     "logger",
     "console",
