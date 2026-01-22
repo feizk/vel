@@ -1,2 +1,2 @@
 export { Logger } from './logger';
-export type { LoggerOptions } from './types';
+export type { LoggerOptions, LogLevel } from './types';

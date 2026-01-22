@@ -108,4 +108,73 @@ describe('Logger', () => {
       /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z \[WARN\]: hello world/,
     );
   });
+
+  it('should default to debug log level', () => {
+    const defaultLogger = new Logger();
+    defaultLogger.debug('debug message');
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[DEBUG]'),
+      'debug message',
+    );
+  });
+
+  it('should filter logs below the set level', () => {
+    const infoLogger = new Logger({ logLevel: 'info' });
+    infoLogger.debug('debug message');
+    expect(consoleSpy).not.toHaveBeenCalled();
+
+    infoLogger.info('info message');
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[INFO]'),
+      'info message',
+    );
+  });
+
+  it('should allow all levels when set to debug', () => {
+    const debugLogger = new Logger({ logLevel: 'debug' });
+    debugLogger.debug('debug');
+    debugLogger.info('info');
+    debugLogger.warn('warn');
+    debugLogger.error('error');
+    expect(consoleSpy).toHaveBeenCalledTimes(4);
+  });
+
+  it('should filter debug and info when set to warn', () => {
+    const warnLogger = new Logger({ logLevel: 'warn' });
+    warnLogger.debug('debug');
+    warnLogger.info('info');
+    expect(consoleSpy).not.toHaveBeenCalled();
+
+    warnLogger.warn('warn');
+    warnLogger.error('error');
+    expect(consoleSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('should only log errors when set to error', () => {
+    const errorLogger = new Logger({ logLevel: 'error' });
+    errorLogger.debug('debug');
+    errorLogger.info('info');
+    errorLogger.warn('warn');
+    expect(consoleSpy).not.toHaveBeenCalled();
+
+    errorLogger.error('error');
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[ERROR]'),
+      'error',
+    );
+  });
+
+  it('should allow changing log level dynamically', () => {
+    const logger = new Logger();
+    logger.setLogLevel('error');
+    logger.debug('debug');
+    expect(consoleSpy).not.toHaveBeenCalled();
+
+    logger.setLogLevel('debug');
+    logger.debug('debug');
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[DEBUG]'),
+      'debug',
+    );
+  });
 });
