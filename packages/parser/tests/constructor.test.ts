@@ -7,13 +7,28 @@ describe('Parser Constructor', () => {
     expect(() => new Parser({ prefix: [] })).toThrow('Prefix must be provided');
   });
 
-  it('should throw custom error message if no prefix provided', () => {
+  it('should throw error message if no prefix provided', () => {
     expect(
       () =>
         new Parser({
           prefix: '',
-          errorMessages: { prefixRequired: 'Custom prefix error' },
         }),
-    ).toThrow('Custom prefix error');
+    ).toThrow('Prefix must be provided');
+  });
+
+  it('should accept debug option', () => {
+    expect(
+      () => new Parser({ prefix: '!', debug: { enabled: true } }),
+    ).not.toThrow();
+    expect(
+      () => new Parser({ prefix: '!', debug: { enabled: false } }),
+    ).not.toThrow();
+    expect(
+      () =>
+        new Parser({
+          prefix: '!',
+          debug: { enabled: true, enableColors: false },
+        }),
+    ).not.toThrow();
   });
 });

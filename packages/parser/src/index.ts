@@ -1,233 +1,93 @@
-import { ParserOptions, ParsedCommand } from './types';
-import { tokenize, coerceValue } from './utils';
+import {
+  ParserOptions,
+  ParsedCommand,
+  CommandSchema,
+  DebugOptions,
+} from './types';
+import { MessageParser } from './parser';
+import { SchemaValidator } from './validator';
+import { Logger } from '@feizk/logger';
 
 /**
- * A parser for messages with configurable prefixes, delimiters, and argument formats.
+ * Main parser class that combines message parsing and schema validation.
+ * Provides a high-level API for parsing messages with optional validation.
  */
 export class Parser {
-  private options: Required<Omit<ParserOptions, 'errorMessages'>> & {
-    errorMessages: {
-      prefixRequired: string;
-      invalidArgFormat: string;
-      invalidNamedArg: string;
-    };
-  };
+  private messageParser: MessageParser;
+  private schemaValidator: SchemaValidator;
+  private lastParsed: ParsedCommand | null = null;
+  private logger: Logger;
 
   /**
    * Creates an instance of Parser.
-   * @param {ParserOptions} options - The configuration options for the parser.
-   * @throws {Error} If prefix is not provided or empty.
+   * @param options - The configuration options for the parser.
    */
   constructor(options: ParserOptions) {
-    const errorMessages = {
-      prefixRequired:
-        options.errorMessages?.prefixRequired ?? 'Prefix must be provided',
-      invalidArgFormat:
-        options.errorMessages?.invalidArgFormat ??
-        'Invalid argument format: "{part}"',
-      invalidNamedArg:
-        options.errorMessages?.invalidNamedArg ??
-        'Invalid named arg: "{part}" at {index}',
-    };
+    this.logger = new Logger({
+      enabled: options.debug?.enabled ?? false,
+      ...options.debug,
+    });
 
-    if (
-      !options.prefix ||
-      (Array.isArray(options.prefix) && options.prefix.length === 0)
-    ) {
-      throw new Error(errorMessages.prefixRequired);
-    }
-
-    this.options = {
-      prefix: options.prefix,
-      caseSensitive: options.caseSensitive ?? false,
-      delimiter: options.delimiter ?? ' ',
-      argFormat: options.argFormat ?? 'typed',
-      errorMessages,
-    };
+    this.messageParser = new MessageParser(options, this.logger);
+    this.schemaValidator = new SchemaValidator(this.logger);
   }
 
   /**
-   * Parses a message into a command structure.
-   * @param {string} message - The message to parse.
-   * @returns {ParsedCommand | null} The parsed command or null if the message is invalid or does not match any prefix.
+   * Registers a schema for a specific command to enable validation.
+   * @param command - The command name to register the schema for.
+   * @param schema - The schema defining validation rules for the command.
+   */
+  registerSchema(command: string, schema: CommandSchema): void {
+    this.schemaValidator.registerSchema(command, schema);
+  }
+
+  /**
+   * Retrieves the last successfully parsed command.
+   * @returns The last parsed command or null if none has been parsed.
+   */
+  getLastParsed(): ParsedCommand | null {
+    return this.lastParsed;
+  }
+
+  /**
+   * Parses a message into a command structure with optional validation.
+   * @param message - The message to parse.
+   * @returns The parsed command or null if invalid.
    */
   parse(message: string): ParsedCommand | null {
-    if (typeof message !== 'string' || message.trim().length === 0) {
+    this.logger.debug('parse Starting parsing message', message);
+
+    const result = this.messageParser.parse(message);
+    if (!result) {
+      this.logger.debug(
+        'parse Message parsing failed, returning null',
+        message,
+      );
       return null;
     }
 
-    const prefixes = Array.isArray(this.options.prefix)
-      ? this.options.prefix
-      : [this.options.prefix];
-    let prefixUsed = '';
-    let content = '';
+    this.logger.debug(
+      'parse Message parsed successfully',
+      result.command,
+      result.subcommands,
+      result.args,
+    );
 
-    for (const prefix of prefixes) {
-      const checkMessage = this.options.caseSensitive
-        ? message
-        : message.toLowerCase();
-      const checkPrefix = this.options.caseSensitive
-        ? prefix
-        : prefix.toLowerCase();
-
-      if (checkMessage.startsWith(checkPrefix)) {
-        prefixUsed = prefix;
-        content = message.slice(prefix.length);
-        break;
-      }
+    const validationErrors = this.schemaValidator.validate(result);
+    if (validationErrors.length > 0) {
+      this.logger.warn('parse Validation errors found', validationErrors);
+      result.validationErrors = validationErrors;
+    } else {
+      this.logger.debug('parse No validation errors');
     }
 
-    if (!content.trim()) {
-      return null;
-    }
-
-    content = content.trim();
-    const parts = tokenize(content, this.options.delimiter);
-
-    if (parts.length === 0) {
-      return null;
-    }
-
-    const command = parts[0];
-    const subcommands: string[] = [];
-    const args: Record<string, unknown> = {};
-    const errors: string[] = [];
-
-    let argStartIndex = -1;
-    let argRegex: RegExp;
-    let isPairFormat = false;
-
-    switch (this.options.argFormat) {
-      case 'typed':
-        argRegex = /^(\w+)\(\s*("[^"]*"|[^)\s]*)\s*\)/;
-        break;
-      case 'equals':
-        argRegex = /^(\w+)\s*=\s*("[^"]*"|[^"\s]*)/;
-        break;
-      case 'named':
-        isPairFormat = true;
-        argRegex = /^--(\w+)/;
-        break;
-      default:
-        argRegex = /^(\w+)\(\s*("[^"]*"|[^)\s]*)\s*\)/;
-    }
-
-    // Helper to check if a part is an argument
-    const isArg = (part: string): boolean => {
-      if (isPairFormat) {
-        return argRegex.test(part);
-      } else {
-        return argRegex.test(part);
-      }
-    };
-
-    // Find the first arg
-    for (let i = 1; i < parts.length; i++) {
-      if (isArg(parts[i])) {
-        argStartIndex = i;
-        break;
-      }
-      subcommands.push(parts[i]);
-    }
-
-    // Parse args
-    if (argStartIndex !== -1) {
-      const argsContent = parts
-        .slice(argStartIndex)
-        .join(this.options.delimiter);
-      let remaining = argsContent;
-
-      if (isPairFormat) {
-        // Named: --key value pairs
-        while (remaining.trim()) {
-          const keyMatch = remaining.match(argRegex);
-          if (!keyMatch) {
-            errors.push(
-              this.options.errorMessages.invalidNamedArg
-                .replace('{part}', remaining.split(' ')[0])
-                .replace('{index}', 'unknown'),
-            );
-            break;
-          }
-          const key = keyMatch[1];
-          remaining = remaining.slice(keyMatch[0].length).trim();
-
-          if (!remaining) {
-            errors.push(
-              this.options.errorMessages.invalidNamedArg
-                .replace('{part}', keyMatch[0])
-                .replace('{index}', 'unknown'),
-            );
-            break;
-          }
-
-          // Parse value
-          let value: string;
-          if (remaining.startsWith('"')) {
-            const endQuote = remaining.indexOf('"', 1);
-            if (endQuote === -1) {
-              errors.push(
-                this.options.errorMessages.invalidNamedArg
-                  .replace('{part}', remaining)
-                  .replace('{index}', 'unknown'),
-              );
-              break;
-            }
-            value = remaining.slice(1, endQuote);
-            remaining = remaining.slice(endQuote + 1).trim();
-          } else {
-            const spaceIndex = remaining.indexOf(this.options.delimiter);
-            if (spaceIndex === -1) {
-              value = remaining;
-              remaining = '';
-            } else {
-              value = remaining.slice(0, spaceIndex);
-              remaining = remaining
-                .slice(spaceIndex + this.options.delimiter.length)
-                .trim();
-            }
-          }
-          args[key] = coerceValue(value);
-        }
-      } else {
-        // Typed or equals: parse sequentially
-        while (remaining.trim()) {
-          const match = remaining.match(argRegex);
-          if (match) {
-            const key = match[1];
-            let value = match[2];
-            if (value.startsWith('"') && value.endsWith('"')) {
-              value = value.slice(1, -1);
-            }
-            args[key] = coerceValue(value);
-            remaining = remaining.slice(match[0].length).trim();
-          } else {
-            errors.push(
-              this.options.errorMessages.invalidArgFormat.replace(
-                '{part}',
-                remaining.split(this.options.delimiter)[0],
-              ),
-            );
-            break;
-          }
-        }
-      }
-    }
-
-    const result: ParsedCommand = {
-      prefixUsed,
-      command,
-      subcommands,
-      args,
-      originalMessage: message,
-    };
-
-    if (errors.length > 0) {
-      result.errors = errors;
-    }
-
+    this.lastParsed = result;
+    this.logger.info('parse Parsing completed successfully', result.command);
     return result;
   }
 }
 
-export { ParsedCommand, ParserOptions };
+// Export all public classes and types
+export { MessageParser } from './parser';
+export { SchemaValidator } from './validator';
+export { ParsedCommand, ParserOptions, CommandSchema, DebugOptions };

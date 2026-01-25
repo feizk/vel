@@ -181,4 +181,25 @@ describe('Parser Parsing', () => {
       originalMessage: '!help --name "hello world" --count 5',
     });
   });
+
+  it('should coerce date strings to Date objects', () => {
+    const parser = new Parser({ prefix: '!' });
+    const result = parser.parse('!help createdAt(2023-01-01T00:00:00Z)');
+    expect(result?.args.createdAt).toBeInstanceOf(Date);
+    expect((result?.args.createdAt as Date).toISOString()).toBe(
+      '2023-01-01T00:00:00.000Z',
+    );
+  });
+
+  it('should coerce comma-separated values to arrays', () => {
+    const parser = new Parser({ prefix: '!' });
+    const result = parser.parse('!help tags(a,b,c)');
+    expect(result?.args.tags).toEqual(['a', 'b', 'c']);
+  });
+
+  it('should coerce mixed types in arrays', () => {
+    const parser = new Parser({ prefix: '!' });
+    const result = parser.parse('!help values(1,true,hello)');
+    expect(result?.args.values).toEqual([1, true, 'hello']);
+  });
 });
