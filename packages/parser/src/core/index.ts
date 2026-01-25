@@ -29,7 +29,7 @@ export class MessageParser {
   parse(message: string): ParsedCommand | null {
     if (this.options.debug) {
       console.log(
-        '[DEBUG] MessageParser.parse Starting message parsing:',
+        '[DEBUG] [MessageParser.parse] Starting message parsing:',
         message,
       );
     }
@@ -37,7 +37,7 @@ export class MessageParser {
     if (typeof message !== 'string' || message.trim().length === 0) {
       if (this.options.debug) {
         console.log(
-          '[DEBUG] MessageParser.parse Invalid message type or empty:',
+          '[DEBUG] [MessageParser.parse] Invalid message type or empty:',
           message,
         );
       }
@@ -48,7 +48,7 @@ export class MessageParser {
     const { prefixUsed, content } = this.findPrefix(message);
     if (this.options.debug) {
       console.log(
-        '[DEBUG] MessageParser.findPrefix Found prefix:',
+        '[DEBUG] [MessageParser.findPrefix] Found prefix:',
         prefixUsed,
         'content:',
         content,
@@ -58,7 +58,7 @@ export class MessageParser {
     if (!content.trim()) {
       if (this.options.debug) {
         console.log(
-          '[DEBUG] MessageParser.parse No content after prefix:',
+          '[DEBUG] [MessageParser.parse] No content after prefix:',
           message,
         );
       }
@@ -70,12 +70,14 @@ export class MessageParser {
       content.trim(),
     );
     if (this.options.debug) {
-      console.log('[DEBUG] MessageParser.parse Tokenized:', tokens);
+      console.log('[DEBUG] [MessageParser.parse] Tokenized:', tokens);
     }
 
     if (tokens.length === 0) {
       if (this.options.debug) {
-        console.log('[DEBUG] MessageParser.parse No tokens after tokenization');
+        console.log(
+          '[DEBUG] [MessageParser.parse] No tokens after tokenization',
+        );
       }
       return null;
     }
@@ -88,7 +90,7 @@ export class MessageParser {
     if (this.options.caseSensitive && command !== command.toLowerCase()) {
       if (this.options.debug) {
         console.log(
-          '[DEBUG] MessageParser.parse Command case mismatch:',
+          '[DEBUG] [MessageParser.parse] Command case mismatch:',
           command,
         );
       }
@@ -100,9 +102,18 @@ export class MessageParser {
       tokens,
       argStartIndex,
     );
+    if (this.options.debug) {
+      console.log('[DEBUG] [MessageParser.parse] Arguments parsed:', args);
+    }
 
     // Extract mentions
     const mentions = this.extractMentions(tokens);
+    if (this.options.debug) {
+      console.log(
+        '[DEBUG] [MessageParser.parse] Mentions extracted:',
+        mentions,
+      );
+    }
 
     const result: ParsedCommand = {
       prefixUsed,
@@ -116,11 +127,17 @@ export class MessageParser {
     const allErrors = [...tokenErrors, ...parseErrors, ...argErrors];
     if (allErrors.length > 0) {
       result.errors = allErrors;
+      if (this.options.debug) {
+        console.log(
+          '[DEBUG] [MessageParser.parse] Parse errors found:',
+          allErrors,
+        );
+      }
     }
 
     if (this.options.debug) {
       console.log(
-        '[INFO] MessageParser.parse Parsing completed:',
+        '[INFO] [MessageParser.parse] Parsing completed:',
         result.command,
       );
     }

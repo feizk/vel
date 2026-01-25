@@ -20,7 +20,7 @@ export class SchemaValidator {
   registerSchema(command: string, schema: CommandSchema): void {
     if (this.debug) {
       console.log(
-        '[DEBUG] SchemaValidator.registerSchema Registering schema',
+        '[DEBUG] [SchemaValidator.registerSchema] Registering schema',
         command,
         schema,
       );
@@ -36,7 +36,7 @@ export class SchemaValidator {
   async validate(parsed: ParsedCommand): Promise<string[]> {
     if (this.debug) {
       console.log(
-        '[DEBUG] SchemaValidator.validate Starting validation',
+        '[DEBUG] [SchemaValidator.validate] Starting validation',
         parsed.command,
       );
     }
@@ -57,11 +57,20 @@ export class SchemaValidator {
     parsed.subcommands = resolvedSubcommands;
     parsed.resolvedSubcommands = originalSubcommands;
 
+    if (this.debug) {
+      console.log(
+        '[DEBUG] [SchemaValidator.validate] Aliases resolved - command:',
+        resolvedCommand,
+        'subcommands:',
+        resolvedSubcommands,
+      );
+    }
+
     const schema = this.schemas.get(resolvedCommand);
     if (!schema) {
       if (this.debug) {
         console.log(
-          '[DEBUG] SchemaValidator.validate No schema found for command',
+          '[DEBUG] [SchemaValidator.validate] No schema found for command',
           resolvedCommand,
         );
       }
@@ -70,12 +79,11 @@ export class SchemaValidator {
 
     if (this.debug) {
       console.log(
-        '[DEBUG] SchemaValidator.validate Found schema',
+        '[DEBUG] [SchemaValidator.validate] Found schema',
         resolvedCommand,
         schema,
       );
     }
-
     const errors: string[] = [];
 
     // Check allowed subcommands
@@ -187,7 +195,7 @@ export class SchemaValidator {
     if (argSchema.allowedValues && !argSchema.allowedValues.includes(value)) {
       if (this.debug) {
         console.log(
-          '[DEBUG] SchemaValidator.validateArgument Value not in allowedValues:',
+          '[DEBUG] [SchemaValidator.validateArgument] Value not in allowedValues:',
           argName,
           'allowed:',
           argSchema.allowedValues,

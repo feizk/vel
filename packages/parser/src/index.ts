@@ -54,14 +54,14 @@ export class Parser {
    */
   async parse(message: string): Promise<ParsedCommand | null> {
     if (this.debug) {
-      console.log('[DEBUG] parse Starting parsing message', message);
+      console.log('[DEBUG] [Parser.parse] Starting parsing message', message);
     }
 
     const result = this.messageParser.parse(message);
     if (!result) {
       if (this.debug) {
         console.log(
-          '[DEBUG] parse Message parsing failed, returning null',
+          '[DEBUG] [Parser.parse] Message parsing failed, returning null',
           message,
         );
       }
@@ -70,7 +70,7 @@ export class Parser {
 
     if (this.debug) {
       console.log(
-        '[DEBUG] parse Message parsed successfully',
+        '[DEBUG] [Parser.parse] Message parsed successfully',
         result.command,
         result.subcommands,
         result.args,
@@ -79,18 +79,21 @@ export class Parser {
 
     const validationErrors = await this.schemaValidator.validate(result);
     if (validationErrors.length > 0) {
-      console.warn('[WARN] parse Validation errors found', validationErrors);
+      console.warn(
+        '[WARN] [Parser.parse] Validation errors found',
+        validationErrors,
+      );
       result.validationErrors = validationErrors;
     } else {
       if (this.debug) {
-        console.log('[DEBUG] parse No validation errors');
+        console.log('[DEBUG] [Parser.parse] No validation errors');
       }
     }
 
     this.lastParsed = result;
     if (this.debug) {
       console.log(
-        '[INFO] parse Parsing completed successfully',
+        '[INFO] [Parser.parse] Parsing completed successfully',
         result.command,
       );
     }

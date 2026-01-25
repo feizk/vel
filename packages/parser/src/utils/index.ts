@@ -7,30 +7,30 @@
  */
 export function coerceValue(value: string, debug: boolean = false): unknown {
   if (debug) {
-    console.log('[DEBUG] coerceValue Starting coercion:', value);
+    console.log('[DEBUG] [coerceValue] Starting coercion:', value);
   }
 
   // Handle empty strings
   if (value.trim() === '') {
     if (debug)
-      console.log('[DEBUG] coerceValue Empty string, returning empty string');
+      console.log('[DEBUG] [coerceValue] Empty string, returning empty string');
     return '';
   }
 
   // Boolean detection
   if (value === 'true') {
-    if (debug) console.log('[DEBUG] coerceValue Coerced to boolean true');
+    if (debug) console.log('[DEBUG] [coerceValue] Coerced to boolean true');
     return true;
   }
   if (value === 'false') {
-    if (debug) console.log('[DEBUG] coerceValue Coerced to boolean false');
+    if (debug) console.log('[DEBUG] [coerceValue] Coerced to boolean false');
     return false;
   }
 
   // Number detection
   const num = parseFloat(value);
   if (!isNaN(num) && num.toString() === value) {
-    if (debug) console.log('[DEBUG] coerceValue Coerced to number:', num);
+    if (debug) console.log('[DEBUG] [coerceValue] Coerced to number:', num);
     return num;
   }
 
@@ -40,7 +40,7 @@ export function coerceValue(value: string, debug: boolean = false): unknown {
     // Only coerce to array if all parts can be coerced or if it's clearly an array
     const coercedParts = parts.map((p) => coerceValue(p, debug));
     if (debug)
-      console.log('[DEBUG] coerceValue Coerced to array:', coercedParts);
+      console.log('[DEBUG] [coerceValue] Coerced to array:', coercedParts);
     return coercedParts;
   }
 
@@ -48,15 +48,14 @@ export function coerceValue(value: string, debug: boolean = false): unknown {
   const date = new Date(value);
   if (!isNaN(date.getTime()) && !isNaN(Date.parse(value))) {
     if (debug)
-      console.log('[DEBUG] coerceValue Coerced to date:', date.toISOString());
+      console.log('[DEBUG] [coerceValue] Coerced to date:', date.toISOString());
     return date;
   }
 
   // Default to string
-  if (debug) console.log('[DEBUG] coerceValue Kept as string:', value);
+  if (debug) console.log('[DEBUG] [coerceValue] Kept as string:', value);
   return value;
 }
-
 /**
  * Resolves command aliases.
  * @param command - The command to resolve.

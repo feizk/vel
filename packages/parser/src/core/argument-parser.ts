@@ -37,7 +37,21 @@ export class ArgumentParser {
     const args: Record<string, ArgumentValue> = {};
     const errors: ParseError[] = [];
 
+    if (this.debug) {
+      console.log(
+        '[DEBUG] [ArgumentParser.parseArguments] Starting argument parsing from index',
+        startIndex,
+        'with format',
+        this.options.argFormat,
+      );
+    }
+
     if (startIndex < 0 || startIndex >= tokens.length) {
+      if (this.debug) {
+        console.log(
+          '[DEBUG] [ArgumentParser.parseArguments] No arguments to parse (invalid start index)',
+        );
+      }
       return { args, errors };
     }
 
@@ -53,6 +67,16 @@ export class ArgumentParser {
         break;
       default:
         this.parseTypedArgs(tokens, startIndex, args, errors);
+    }
+
+    if (this.debug) {
+      console.log(
+        '[DEBUG] [ArgumentParser.parseArguments] Argument parsing completed',
+        'args:',
+        args,
+        'errors:',
+        errors.length,
+      );
     }
 
     return { args, errors };
@@ -159,6 +183,13 @@ export class ArgumentParser {
     errors: ParseError[],
   ): ArgumentValue | undefined {
     try {
+      if (this.debug) {
+        console.log(
+          '[DEBUG] [ArgumentParser.parseValue] Parsing value:',
+          valueStr,
+        );
+      }
+
       // Handle quoted strings
       let cleanedValue = valueStr;
       if (
@@ -166,11 +197,30 @@ export class ArgumentParser {
         (cleanedValue.startsWith("'") && cleanedValue.endsWith("'"))
       ) {
         cleanedValue = cleanedValue.slice(1, -1);
+        if (this.debug) {
+          console.log(
+            '[DEBUG] [ArgumentParser.parseValue] Unquoted value:',
+            cleanedValue,
+          );
+        }
       }
 
-      return coerceValue(cleanedValue, this.debug) as ArgumentValue;
+      const result = coerceValue(cleanedValue, this.debug) as ArgumentValue;
+      if (this.debug) {
+        console.log(
+          '[DEBUG] [ArgumentParser.parseValue] Coerced result:',
+          result,
+        );
+      }
+      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      if (this.debug) {
+        console.log(
+          '[DEBUG] [ArgumentParser.parseValue] Parse error:',
+          message,
+        );
+      }
       errors.push({
         type: 'parse',
         message: `Failed to parse value "${valueStr}": ${message}`,
