@@ -1,12 +1,6 @@
-import {
-  ParserOptions,
-  ParsedCommand,
-  CommandSchema,
-  DebugOptions,
-} from './types';
-import { MessageParser } from './parser';
-import { SchemaValidator } from './validator';
-import { Logger } from '@feizk/logger';
+import { ParserOptions, ParsedCommand, CommandSchema } from './types/index';
+import { MessageParser } from './core/index';
+import { SchemaValidator } from './validation/index';
 
 /**
  * Main parser class that combines message parsing and schema validation.
@@ -16,20 +10,24 @@ export class Parser {
   private messageParser: MessageParser;
   private schemaValidator: SchemaValidator;
   private lastParsed: ParsedCommand | null = null;
-  private logger: Logger;
+  private debug: boolean;
 
   /**
    * Creates an instance of Parser.
    * @param options - The configuration options for the parser.
    */
   constructor(options: ParserOptions) {
-    this.logger = new Logger({
-      enabled: options.debug?.enabled ?? false,
-      ...options.debug,
-    });
+    if (
+      !options.prefix ||
+      (Array.isArray(options.prefix) && options.prefix.length === 0)
+    ) {
+      throw new Error('Prefix must be provided');
+    }
 
-    this.messageParser = new MessageParser(options, this.logger);
-    this.schemaValidator = new SchemaValidator(this.logger);
+    this.debug = options.debug ?? false;
+
+    this.messageParser = new MessageParser(options);
+    this.schemaValidator = new SchemaValidator(this.debug);
   }
 
   /**
@@ -54,40 +52,64 @@ export class Parser {
    * @param message - The message to parse.
    * @returns The parsed command or null if invalid.
    */
-  parse(message: string): ParsedCommand | null {
-    this.logger.debug('parse Starting parsing message', message);
+  async parse(message: string): Promise<ParsedCommand | null> {
+    if (this.debug) {
+      console.log('[DEBUG] [Parser.parse] Starting parsing message', message);
+    }
 
     const result = this.messageParser.parse(message);
     if (!result) {
-      this.logger.debug(
-        'parse Message parsing failed, returning null',
-        message,
-      );
+      if (this.debug) {
+        console.log(
+          '[DEBUG] [Parser.parse] Message parsing failed, returning null',
+          message,
+        );
+      }
       return null;
     }
 
-    this.logger.debug(
-      'parse Message parsed successfully',
-      result.command,
-      result.subcommands,
-      result.args,
-    );
+    if (this.debug) {
+      console.log(
+        '[DEBUG] [Parser.parse] Message parsed successfully',
+        result.command,
+        result.subcommands,
+        result.args,
+      );
+    }
 
-    const validationErrors = this.schemaValidator.validate(result);
+    const validationErrors = await this.schemaValidator.validate(result);
     if (validationErrors.length > 0) {
-      this.logger.warn('parse Validation errors found', validationErrors);
+      console.warn(
+        '[WARN] [Parser.parse] Validation errors found',
+        validationErrors,
+      );
       result.validationErrors = validationErrors;
     } else {
-      this.logger.debug('parse No validation errors');
+      if (this.debug) {
+        console.log('[DEBUG] [Parser.parse] No validation errors');
+      }
     }
 
     this.lastParsed = result;
-    this.logger.info('parse Parsing completed successfully', result.command);
+    if (this.debug) {
+      console.log(
+        '[INFO] [Parser.parse] Parsing completed successfully',
+        result.command,
+      );
+    }
     return result;
   }
 }
 
 // Export all public classes and types
-export { MessageParser } from './parser';
-export { SchemaValidator } from './validator';
-export { ParsedCommand, ParserOptions, CommandSchema, DebugOptions };
+export { MessageParser } from './core/index';
+export { SchemaValidator } from './validation/index';
+export {
+  ParsedCommand,
+  ParserOptions,
+  CommandSchema,
+  DebugOptions,
+  ArgumentSchema,
+  Mention,
+  ParseError,
+} from './types/index';

@@ -15,24 +15,27 @@ import { Parser } from '@feizk/parser';
 
 const parser = new Parser({ prefix: '!' });
 
-const result = parser.parse('!help filter name(test) status(active)');
+const result = await parser.parse(
+  '!help filter name(test) status(active) <@123>',
+);
 
 if (result) {
   console.log(result.command); // 'help'
   console.log(result.subcommands); // ['filter']
   console.log(result.args); // { name: 'test', status: 'active' }
+  console.log(result.mentions); // [{ type: 'user', id: '123', raw: '<@123>' }]
 }
 ```
 
 ## Options
 
-| Option          | Type                             | Default     | Description                           |
-| --------------- | -------------------------------- | ----------- | ------------------------------------- |
-| `prefix`        | `string \| string[]`             | -           | **Required.** The prefix(es) to match |
-| `caseSensitive` | `boolean`                        | `false`     | Case sensitivity for prefix matching  |
-| `delimiter`     | `string`                         | `' '`       | Argument delimiter                    |
-| `argFormat`     | `'typed' \| 'equals' \| 'named'` | `'typed'`   | Argument format style                 |
-| `debug`         | `DebugOptions`                   | `undefined` | Debug logging configuration           |
+| Option          | Type                             | Default   | Description                           |
+| --------------- | -------------------------------- | --------- | ------------------------------------- |
+| `prefix`        | `string \| string[]`             | -         | **Required.** The prefix(es) to match |
+| `caseSensitive` | `boolean`                        | `false`   | Case sensitivity for prefix matching  |
+| `delimiter`     | `string`                         | `' '`     | Argument delimiter                    |
+| `argFormat`     | `'typed' \| 'equals' \| 'named'` | `'typed'` | Argument format style                 |
+| `debug`         | `boolean`                        | `false`   | Enable debug logging                  |
 
 ## Argument Formats
 
