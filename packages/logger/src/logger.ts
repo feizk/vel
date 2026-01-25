@@ -27,6 +27,12 @@ const LOG_LEVEL_PRIORITIES: Record<LogLevel, number> = {
 export class Logger {
   private options: LoggerOptions;
   private level: LogLevel;
+  private discordQueue: Array<{
+    embed: Record<string, unknown>;
+    retryCount: number;
+  }> = [];
+  private isProcessing: boolean = false;
+  private processTimeout?: ReturnType<typeof setTimeout>;
 
   constructor(options: LoggerOptions = {}) {
     this.options = {
@@ -35,6 +41,7 @@ export class Logger {
       formatLog: options.formatLog,
       discord: options.discord,
     };
+
     this.level = options.level ?? 'debug';
   }
 
@@ -52,11 +59,11 @@ export class Logger {
    * @param timestamp - The formatted timestamp.
    * @param args - The log arguments.
    */
-  private async sendToDiscord(
+  private sendToDiscord(
     level: LogLevel,
     timestamp: string,
     args: unknown[],
-  ): Promise<void> {
+  ): void {
     const discord = this.options.discord;
     if (!discord?.enable) return;
 
@@ -81,11 +88,65 @@ export class Logger {
           color: getDiscordColor(level),
         };
 
+    this.discordQueue.push({ embed, retryCount: 0 });
+
+    if (!this.isProcessing) {
+      this.isProcessing = true;
+      setTimeout(() => this.processQueue(), 0);
+    }
+  }
+
+  /**
+   * Processes the Discord queue by sending batches of embeds.
+   */
+  private processQueue(): void {
+    if (this.discordQueue.length === 0) {
+      this.isProcessing = false;
+      return;
+    }
+
+    this.isProcessing = true;
+    const discord = this.options.discord!;
+    const batchSize = discord.batchSize ?? 10;
+    const batch = this.discordQueue.splice(0, batchSize);
+
+    this.sendBatch(batch.map((item) => item.embed))
+      .then(() => {
+        // Schedule next batch after delay
+        const delay = discord.batchDelay ?? 2000;
+        this.processTimeout = setTimeout(() => this.processQueue(), delay);
+      })
+      .catch(() => {
+        // On failure, put back the batch with incremented retry count
+        const maxRetries = discord.maxRetries ?? 3;
+        const retryItems = batch
+          .filter((item) => item.retryCount < maxRetries)
+          .map((item) => ({
+            ...item,
+            retryCount: item.retryCount + 1,
+          }));
+
+        this.discordQueue.unshift(...retryItems);
+        // If retries exhausted, drop them
+
+        // Schedule next attempt after retry delay
+        const retryDelayBase = discord.retryDelayBase ?? 1000;
+        const delay = retryDelayBase * Math.pow(2, batch[0]?.retryCount ?? 0);
+        this.processTimeout = setTimeout(() => this.processQueue(), delay);
+      });
+  }
+
+  /**
+   * Sends a batch of embeds to Discord.
+   * @param embeds - The embeds to send.
+   */
+  private async sendBatch(embeds: Record<string, unknown>[]): Promise<void> {
+    const discord = this.options.discord!;
     await fetch(discord.webhookURL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ embeds: [embed] }),
-    }).catch(() => {});
+      body: JSON.stringify({ embeds }),
+    });
   }
 
   /**
@@ -107,6 +168,7 @@ export class Logger {
       this.options.formatTimestamp!,
       TIMESTAMP_TYPES,
     );
+
     console.log(...formatLog('[INFO]', timestamp, args, this.options));
     this.sendToDiscord('info', timestamp, args);
   }
@@ -121,6 +183,7 @@ export class Logger {
       this.options.formatTimestamp!,
       TIMESTAMP_TYPES,
     );
+
     console.log(...formatLog('[WARN]', timestamp, args, this.options));
     this.sendToDiscord('warn', timestamp, args);
   }
@@ -135,6 +198,7 @@ export class Logger {
       this.options.formatTimestamp!,
       TIMESTAMP_TYPES,
     );
+
     console.log(...formatLog('[ERROR]', timestamp, args, this.options));
     this.sendToDiscord('error', timestamp, args);
   }
@@ -149,6 +213,7 @@ export class Logger {
       this.options.formatTimestamp!,
       TIMESTAMP_TYPES,
     );
+
     console.log(...formatLog('[DEBUG]', timestamp, args, this.options));
     this.sendToDiscord('debug', timestamp, args);
   }
