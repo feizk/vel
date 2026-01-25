@@ -24,6 +24,7 @@ export function getColor(level: string, enableColors: boolean): string {
     '[ERROR]': chalk.red(level),
     '[DEBUG]': chalk.gray(level),
   };
+
   return colors[level] || level;
 }
 
@@ -34,6 +35,7 @@ export function getDiscordColor(level: LogLevel): number {
     warn: 0xf39c12,
     error: 0xe74c3c,
   };
+
   return colors[level];
 }
 
@@ -49,8 +51,10 @@ export function formatLog(
 ): [string, ...unknown[]] {
   const { formatLog, enableColors = true } = options;
   const coloredLevel = getColor(level, enableColors);
+
   if (formatLog) {
     return [formatLog(coloredLevel, timestamp, args)];
   }
+
   return [`${coloredLevel} ${timestamp}`, ...args];
 }

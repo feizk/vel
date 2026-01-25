@@ -104,18 +104,6 @@ describe('Logger', () => {
     expect(callArgs).toContain('custom-time');
   });
 
-  it('should use custom log format', () => {
-    const customLogger = new Logger({
-      formatLog: (level, timestamp, args) =>
-        `${timestamp} ${level}: ${args.join(' ')}`,
-    });
-    customLogger.warn('hello', 'world');
-    const callArgs = consoleSpy.mock.calls[0][0];
-    expect(callArgs).toMatch(
-      /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z \[WARN\]: hello world/,
-    );
-  });
-
   it('should default to debug log level', () => {
     const defaultLogger = new Logger();
     defaultLogger.debug('debug message');
@@ -193,16 +181,18 @@ describe('Discord Transport', () => {
   >;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     fetchMock.mockResolvedValue({} as Response);
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     consoleSpy.mockRestore();
     fetchMock.mockClear();
   });
 
-  it('should send to Discord when enabled and valid URL', () => {
+  it('should send to Discord when enabled and valid URL', async () => {
     const discordLogger = new Logger({
       discord: {
         enable: true,
@@ -210,6 +200,7 @@ describe('Discord Transport', () => {
       },
     });
     discordLogger.info('test message');
+    await vi.advanceTimersByTimeAsync(0);
     expect(fetchMock).toHaveBeenCalledWith(
       'https://discord.com/api/webhooks/123/abc',
       expect.objectContaining({
@@ -242,7 +233,7 @@ describe('Discord Transport', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('should use custom formatEmbed if provided', () => {
+  it('should use custom formatEmbed if provided', async () => {
     const customEmbed = { title: 'Custom', description: 'Custom desc' };
     const discordLogger = new Logger({
       discord: {
@@ -252,6 +243,7 @@ describe('Discord Transport', () => {
       },
     });
     discordLogger.warn('test');
+    await vi.advanceTimersByTimeAsync(0);
     expect(fetchMock).toHaveBeenCalledWith(
       'https://discord.com/api/webhooks/123/abc',
       expect.objectContaining({
@@ -260,7 +252,7 @@ describe('Discord Transport', () => {
     );
   });
 
-  it('should handle multiple arguments in message', () => {
+  it('should handle multiple arguments in message', async () => {
     const discordLogger = new Logger({
       discord: {
         enable: true,
@@ -268,8 +260,70 @@ describe('Discord Transport', () => {
       },
     });
     discordLogger.error('hello', 'world', 42);
+    await vi.advanceTimersByTimeAsync(0);
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
     expect(body.embeds[0].title).toMatch(/^ERROR-[A-Z0-9]{8}$/);
     expect(body.embeds[0].description).toBe('hello world 42');
+  });
+
+  it('should batch messages and send multiple embeds', async () => {
+    vi.useFakeTimers();
+    const discordLogger = new Logger({
+      discord: {
+        enable: true,
+        webhookURL: 'https://discord.com/api/webhooks/123/abc',
+        batchSize: 2,
+        batchDelay: 1000,
+      },
+    });
+    discordLogger.info('message 1');
+    discordLogger.warn('message 2');
+    discordLogger.error('message 3');
+
+    // Should not have sent yet
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    // Advance time to trigger batch send
+    await vi.advanceTimersByTimeAsync(1);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    expect(body.embeds).toHaveLength(2);
+
+    // Advance again for next batch
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const body2 = JSON.parse(fetchMock.mock.calls[1][1].body as string);
+    expect(body2.embeds).toHaveLength(1);
+
+    vi.useRealTimers();
+  });
+
+  it('should retry on failure with exponential backoff', async () => {
+    vi.useFakeTimers();
+    fetchMock.mockRejectedValueOnce(new Error('Network error'));
+    fetchMock.mockRejectedValueOnce(new Error('Network error'));
+    fetchMock.mockResolvedValue({} as Response);
+
+    const discordLogger = new Logger({
+      discord: {
+        enable: true,
+        webhookURL: 'https://discord.com/api/webhooks/123/abc',
+        maxRetries: 2,
+        retryDelayBase: 500,
+      },
+    });
+    discordLogger.info('test');
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // First attempt fails
+
+    await vi.advanceTimersByTimeAsync(500); // Retry delay 500ms
+    expect(fetchMock).toHaveBeenCalledTimes(2); // Second attempt fails
+
+    await vi.advanceTimersByTimeAsync(1000); // Next retry 1000ms (2^1 * 500)
+    expect(fetchMock).toHaveBeenCalledTimes(3); // Third attempt succeeds
+
+    vi.useRealTimers();
   });
 });

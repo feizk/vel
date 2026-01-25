@@ -21,70 +21,27 @@ logger.error('This is an error');
 logger.debug('This is a debug message');
 ```
 
-### Options
+## Options
 
-Customize the logger with constructor options:
+| Option          | Type                             | Default     | Description                           |
+| --------------- | -------------------------------- | ----------- | ------------------------------------- |
+| `enableColors`  | `boolean`                        | `true`      | Enable colored output                 |
+| `formatTimestamp`| `function \| undefined`          | `ISO format`| Custom timestamp formatter function   |
+| `formatLog`     | `function \| undefined`          | `undefined` | Custom log formatter function         |
+| `level`         | `'debug' \| 'info' \| 'warn' \| 'error'` | `'debug'` | Minimum log level                     |
+| `discord`       | `object \| undefined`            | `undefined` | Discord transport options             |
 
-```typescript
-const logger = new Logger({
-  enableColors: true, // Default: true
-  formatTimestamp: undefined, // Custom timestamp formatter function, Default: ISO format
-  formatLog: undefined, // Custom log formatter function, Default: undefined
-  level: 'debug', // 'debug' | 'info' | 'warn' | 'error', Default: 'debug'
-  discord: {
-    enable: false, // Enable Discord transport
-    webhookURL: '', // Discord webhook URL
-    formatEmbed: undefined, // Custom embed formatter function
-  },
-});
-```
+### Discord Options
 
-#### Examples
+The `discord` option configures Discord webhook integration. It has the following properties:
 
-```typescript
-// Disable colors
-const noColorLogger = new Logger({ enableColors: false });
-
-// Use locale timestamp
-const localeLogger = new Logger({
-  formatTimestamp: (types) => [types.Locale, new Date().toLocaleString()],
-});
-
-// Custom timestamp
-const customLogger = new Logger({
-  formatTimestamp: () => [TIMESTAMP_TYPES.Custom, 'custom-time'],
-});
-
-// Filter logs below info level
-const infoLogger = new Logger({ level: 'info' });
-infoLogger.debug('Not logged');
-infoLogger.info('Logged'); // and higher
-
-// Change level dynamically
-logger.setLevel('error');
-
-// Enable Discord transport
-const discordLogger = new Logger({
-  discord: {
-    enable: true,
-    webhookURL: 'https://discord.com/api/webhooks/123456789/abcdef',
-  },
-});
-discordLogger.error('This will be sent to Discord');
-
-// Custom embed formatting
-const customDiscordLogger = new Logger({
-  discord: {
-    enable: true,
-    webhookURL: 'https://discord.com/api/webhooks/123456789/abcdef',
-    formatEmbed: (level, timestamp, message) => ({
-      title: `${level} - Custom`,
-      description: `**Timestamp:** ${timestamp}\n**Message:** ${message}`,
-      color: 0xff0000, // Red
-    }),
-  },
-});
-```
+- `enable`: `boolean`, default `false` - Enable Discord transport
+- `webhookURL`: `string`, default `''` - Discord webhook URL
+- `formatEmbed`: `function \| undefined`, default `undefined` - Custom embed formatter function
+- `batchSize`: `number`, default `10` - Number of embeds per batch request
+- `batchDelay`: `number`, default `2000` - Delay in ms between batch sends
+- `maxRetries`: `number`, default `3` - Maximum retry attempts for failed sends
+- `retryDelayBase`: `number`, default `1000` - Base delay in ms for exponential backoff
 
 ## API
 
@@ -97,3 +54,7 @@ const customDiscordLogger = new Logger({
 - `setLevel(level: LogLevel)`: Sets the minimum log level for filtering messages.
 
 All messages include a timestamp and are colored accordingly (unless disabled via options).
+
+## License
+
+MIT

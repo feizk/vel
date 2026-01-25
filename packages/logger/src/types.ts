@@ -11,6 +11,10 @@ export interface TimestampTypes {
 export interface DiscordOptions {
   enable: boolean;
   webhookURL: string;
+  batchSize?: number;
+  batchDelay?: number;
+  maxRetries?: number;
+  retryDelayBase?: number;
   formatEmbed?: (
     level: LogLevel,
     timestamp: string,
@@ -19,12 +23,13 @@ export interface DiscordOptions {
 }
 
 export interface LoggerOptions {
+  level?: LogLevel;
   enableColors?: boolean;
+  discord?: DiscordOptions;
+
   formatTimestamp?: (
     types: TimestampTypes,
     date?: Date,
   ) => [TimestampType, string];
   formatLog?: (level: string, timestamp: string, args: unknown[]) => string;
-  level?: LogLevel;
-  discord?: DiscordOptions;
 }
