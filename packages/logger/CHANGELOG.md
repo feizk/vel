@@ -1,5 +1,12 @@
 # @feizk/logger
 
+## 1.7.0
+
+### Minor Changes
+
+- 245a016: ->
+  Improved discord webhook logging.
+
 ## 1.6.0
 
 ### Minor Changes
