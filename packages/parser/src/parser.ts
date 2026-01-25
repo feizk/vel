@@ -1,23 +1,20 @@
-import { ParserOptions, ParsedCommand, DebugOptions } from './types';
+import { ParserOptions, ParsedCommand } from './types';
 import { tokenize, coerceValue } from './utils';
-import { Logger } from '@feizk/logger';
 
 /**
  * Core message parser that handles prefix detection, tokenization, and argument parsing.
  */
 export class MessageParser {
-  private options: Required<Omit<ParserOptions, 'debug'>> & {
-    debug?: DebugOptions;
-  };
-  private logger: Logger;
+  private options: Required<Omit<ParserOptions, 'debug'>>;
+  private debug: boolean;
 
   /**
    * Creates an instance of MessageParser.
    * @param options - The configuration options for the parser.
-   * @param logger - Logger instance to use for debug logging.
+   * @param debug - Whether debug logging is enabled.
    * @throws {Error} If prefix is not provided or empty.
    */
-  constructor(options: ParserOptions, logger: Logger) {
+  constructor(options: ParserOptions, debug: boolean) {
     if (
       !options.prefix ||
       (Array.isArray(options.prefix) && options.prefix.length === 0)
@@ -30,10 +27,9 @@ export class MessageParser {
       caseSensitive: options.caseSensitive ?? false,
       delimiter: options.delimiter ?? ' ',
       argFormat: options.argFormat ?? 'typed',
-      debug: options.debug,
     };
 
-    this.logger = logger;
+    this.debug = debug;
   }
 
   /**
@@ -42,50 +38,72 @@ export class MessageParser {
    * @returns The parsed command or null if invalid.
    */
   parse(message: string): ParsedCommand | null {
-    this.logger.debug('MessageParser.parse Starting message parsing', message);
-
-    if (typeof message !== 'string' || message.trim().length === 0) {
-      this.logger.debug(
-        'MessageParser.parse Invalid message type or empty',
+    if (this.debug) {
+      console.log(
+        '[DEBUG] MessageParser.parse Starting message parsing:',
         message,
       );
+    }
+
+    if (typeof message !== 'string' || message.trim().length === 0) {
+      if (this.debug) {
+        console.log(
+          '[DEBUG] MessageParser.parse Invalid message type or empty:',
+          message,
+        );
+      }
       return null;
     }
 
     const { prefixUsed, content } = this.findPrefix(message);
-    this.logger.debug(
-      'MessageParser.findPrefix Found prefix',
-      prefixUsed,
-      'content:',
-      content,
-    );
+    if (this.debug) {
+      console.log(
+        '[DEBUG] MessageParser.findPrefix Found prefix:',
+        prefixUsed,
+        'content:',
+        content,
+      );
+    }
 
     if (!content.trim()) {
-      this.logger.debug('MessageParser.parse No content after prefix', message);
+      if (this.debug) {
+        console.log(
+          '[DEBUG] MessageParser.parse No content after prefix:',
+          message,
+        );
+      }
       return null;
     }
 
-    const parts = tokenize(content.trim(), this.options.delimiter);
-    this.logger.debug('MessageParser.parse Tokenized parts', parts);
+    const parts = tokenize(content.trim(), this.options.delimiter, this.debug);
+    if (this.debug) {
+      console.log('[DEBUG] MessageParser.parse Tokenized parts:', parts);
+    }
 
     if (parts.length === 0) {
-      this.logger.debug(
-        'MessageParser.parse No parts after tokenization',
-        content,
-      );
+      if (this.debug) {
+        console.log(
+          '[DEBUG] MessageParser.parse No parts after tokenization:',
+          content,
+        );
+      }
       return null;
     }
 
     const command = parts[0];
-    this.logger.debug('MessageParser.parse Extracted command', command);
+    if (this.debug) {
+      console.log('[DEBUG] MessageParser.parse Extracted command:', command);
+    }
 
     const { subcommands, args, errors } = this.parseParts(parts);
-    this.logger.debug(
-      'MessageParser.parseParts Parsed subcommands and args',
-      subcommands,
-      args,
-      errors,
-    );
+    if (this.debug) {
+      console.log(
+        '[DEBUG] MessageParser.parseParts Parsed subcommands and args:',
+        subcommands,
+        args,
+        errors,
+      );
+    }
 
     const result: ParsedCommand = {
       prefixUsed,
@@ -96,11 +114,16 @@ export class MessageParser {
     };
 
     if (errors.length > 0) {
-      this.logger.warn('MessageParser.parse Parsing errors found', errors);
+      console.warn('[WARN] MessageParser.parse Parsing errors found:', errors);
       result.errors = errors;
     }
 
-    this.logger.info('MessageParser.parse Parsing completed', result.command);
+    if (this.debug) {
+      console.log(
+        '[INFO] MessageParser.parse Parsing completed:',
+        result.command,
+      );
+    }
     return result;
   }
 
@@ -277,7 +300,7 @@ export class MessageParser {
             .trim();
         }
       }
-      args[key] = coerceValue(value);
+      args[key] = coerceValue(value, this.debug);
     }
   }
 
@@ -302,7 +325,7 @@ export class MessageParser {
         if (value.startsWith('"') && value.endsWith('"')) {
           value = value.slice(1, -1);
         }
-        args[key] = coerceValue(value);
+        args[key] = coerceValue(value, this.debug);
         remaining = remaining.slice(match[0].length).trim();
       } else {
         errors.push(

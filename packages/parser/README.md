@@ -26,13 +26,13 @@ if (result) {
 
 ## Options
 
-| Option          | Type                             | Default     | Description                           |
-| --------------- | -------------------------------- | ----------- | ------------------------------------- |
-| `prefix`        | `string \| string[]`             | -           | **Required.** The prefix(es) to match |
-| `caseSensitive` | `boolean`                        | `false`     | Case sensitivity for prefix matching  |
-| `delimiter`     | `string`                         | `' '`       | Argument delimiter                    |
-| `argFormat`     | `'typed' \| 'equals' \| 'named'` | `'typed'`   | Argument format style                 |
-| `debug`         | `DebugOptions`                   | `undefined` | Debug logging configuration           |
+| Option          | Type                             | Default   | Description                           |
+| --------------- | -------------------------------- | --------- | ------------------------------------- |
+| `prefix`        | `string \| string[]`             | -         | **Required.** The prefix(es) to match |
+| `caseSensitive` | `boolean`                        | `false`   | Case sensitivity for prefix matching  |
+| `delimiter`     | `string`                         | `' '`     | Argument delimiter                    |
+| `argFormat`     | `'typed' \| 'equals' \| 'named'` | `'typed'` | Argument format style                 |
+| `debug`         | `boolean`                        | `false`   | Enable debug logging                  |
 
 ## Argument Formats
 

@@ -1,15 +1,14 @@
 import { ParsedCommand, CommandSchema, ArgumentSchema } from './types';
-import { Logger } from '@feizk/logger';
 
 /**
  * Schema validator for parsed commands.
  */
 export class SchemaValidator {
   private schemas: Map<string, CommandSchema> = new Map();
-  private logger: Logger;
+  private debug: boolean;
 
-  constructor(logger: Logger) {
-    this.logger = logger;
+  constructor(debug: boolean) {
+    this.debug = debug;
   }
 
   /**
@@ -18,11 +17,13 @@ export class SchemaValidator {
    * @param schema - The schema to register.
    */
   registerSchema(command: string, schema: CommandSchema): void {
-    this.logger.debug(
-      'SchemaValidator.registerSchema Registering schema',
-      command,
-      schema,
-    );
+    if (this.debug) {
+      console.log(
+        '[DEBUG] SchemaValidator.registerSchema Registering schema',
+        command,
+        schema,
+      );
+    }
 
     this.schemas.set(command, schema);
   }
@@ -43,6 +44,16 @@ export class SchemaValidator {
 
     // Check allowedValues first, as it's applicable to all types
     if (argSchema.allowedValues && !argSchema.allowedValues.includes(value)) {
+      if (this.debug) {
+        console.log(
+          '[DEBUG] SchemaValidator.validateArgument Value not in allowedValues:',
+          argName,
+          'allowed:',
+          argSchema.allowedValues,
+          'got:',
+          value,
+        );
+      }
       errors.push(
         `Argument "${argName}" must be one of: ${argSchema.allowedValues.join(',')}, but got "${value}".`,
       );
@@ -56,6 +67,16 @@ export class SchemaValidator {
             argSchema.minLength !== undefined &&
             value.length < argSchema.minLength
           ) {
+            if (this.debug) {
+              console.log(
+                '[DEBUG] SchemaValidator.validateArgument String too short:',
+                argName,
+                'minLength:',
+                argSchema.minLength,
+                'got length:',
+                value.length,
+              );
+            }
             errors.push(
               `Argument "${argName}" must be at least ${argSchema.minLength} characters long, but got ${value.length}.`,
             );
@@ -65,12 +86,32 @@ export class SchemaValidator {
             argSchema.maxLength !== undefined &&
             value.length > argSchema.maxLength
           ) {
+            if (this.debug) {
+              console.log(
+                '[DEBUG] SchemaValidator.validateArgument String too long:',
+                argName,
+                'maxLength:',
+                argSchema.maxLength,
+                'got length:',
+                value.length,
+              );
+            }
             errors.push(
               `Argument "${argName}" must be at most ${argSchema.maxLength} characters long, but got ${value.length}.`,
             );
           }
 
           if (argSchema.pattern && !new RegExp(argSchema.pattern).test(value)) {
+            if (this.debug) {
+              console.log(
+                '[DEBUG] SchemaValidator.validateArgument Pattern mismatch:',
+                argName,
+                'pattern:',
+                argSchema.pattern,
+                'value:',
+                value,
+              );
+            }
             errors.push(
               `Argument "${argName}" must match pattern "${argSchema.pattern}", but got "${value}".`,
             );
@@ -85,12 +126,32 @@ export class SchemaValidator {
             typeof argSchema.max === 'number' ? argSchema.max : undefined;
 
           if (min !== undefined && value < min) {
+            if (this.debug) {
+              console.log(
+                '[DEBUG] SchemaValidator.validateArgument Number too small:',
+                argName,
+                'min:',
+                min,
+                'got:',
+                value,
+              );
+            }
             errors.push(
               `Argument "${argName}" must be at least ${min}, but got ${value}.`,
             );
           }
 
           if (max !== undefined && value > max) {
+            if (this.debug) {
+              console.log(
+                '[DEBUG] SchemaValidator.validateArgument Number too large:',
+                argName,
+                'max:',
+                max,
+                'got:',
+                value,
+              );
+            }
             errors.push(
               `Argument "${argName}" must be at most ${max}, but got ${value}.`,
             );
@@ -103,6 +164,16 @@ export class SchemaValidator {
             argSchema.minItems !== undefined &&
             value.length < argSchema.minItems
           ) {
+            if (this.debug) {
+              console.log(
+                '[DEBUG] SchemaValidator.validateArgument Array too small:',
+                argName,
+                'minItems:',
+                argSchema.minItems,
+                'got items:',
+                value.length,
+              );
+            }
             errors.push(
               `Argument "${argName}" must have at least ${argSchema.minItems} items, but got ${value.length}.`,
             );
@@ -112,6 +183,16 @@ export class SchemaValidator {
             argSchema.maxItems !== undefined &&
             value.length > argSchema.maxItems
           ) {
+            if (this.debug) {
+              console.log(
+                '[DEBUG] SchemaValidator.validateArgument Array too large:',
+                argName,
+                'maxItems:',
+                argSchema.maxItems,
+                'got items:',
+                value.length,
+              );
+            }
             errors.push(
               `Argument "${argName}" must have at most ${argSchema.maxItems} items, but got ${value.length}.`,
             );
@@ -121,6 +202,16 @@ export class SchemaValidator {
       case 'date':
         if (value instanceof Date) {
           if (argSchema.min !== undefined && value < new Date(argSchema.min)) {
+            if (this.debug) {
+              console.log(
+                '[DEBUG] SchemaValidator.validateArgument Date too early:',
+                argName,
+                'min:',
+                argSchema.min,
+                'got:',
+                value.toISOString(),
+              );
+            }
             errors.push(
               `Argument "${argName}" must be after ${new Date(
                 argSchema.min,
@@ -129,6 +220,16 @@ export class SchemaValidator {
           }
 
           if (argSchema.max !== undefined && value > new Date(argSchema.max)) {
+            if (this.debug) {
+              console.log(
+                '[DEBUG] SchemaValidator.validateArgument Date too late:',
+                argName,
+                'max:',
+                argSchema.max,
+                'got:',
+                value.toISOString(),
+              );
+            }
             errors.push(
               `Argument "${argName}" must be before ${new Date(
                 argSchema.max,
@@ -151,26 +252,32 @@ export class SchemaValidator {
    * @returns Array of validation error messages.
    */
   validate(parsed: ParsedCommand): string[] {
-    this.logger.debug(
-      'SchemaValidator.validate Starting validation',
-      parsed.command,
-    );
+    if (this.debug) {
+      console.log(
+        '[DEBUG] SchemaValidator.validate Starting validation',
+        parsed.command,
+      );
+    }
 
     const schema = this.schemas.get(parsed.command);
     if (!schema) {
-      this.logger.debug(
-        'SchemaValidator.validate No schema found for command',
-        parsed.command,
-      );
+      if (this.debug) {
+        console.log(
+          '[DEBUG] SchemaValidator.validate No schema found for command',
+          parsed.command,
+        );
+      }
 
       return [];
     }
 
-    this.logger.debug(
-      'SchemaValidator.validate Found schema',
-      parsed.command,
-      schema,
-    );
+    if (this.debug) {
+      console.log(
+        '[DEBUG] SchemaValidator.validate Found schema',
+        parsed.command,
+        schema,
+      );
+    }
 
     const errors: string[] = [];
 
@@ -178,9 +285,14 @@ export class SchemaValidator {
     if (schema.allowedSubcommands) {
       for (const sub of parsed.subcommands) {
         if (!schema.allowedSubcommands.includes(sub)) {
-          errors.push(
-            `Subcommand "${sub}" is not allowed for command "${parsed.command}".`,
-          );
+          const errorMsg = `Subcommand "${sub}" is not allowed for command "${parsed.command}".`;
+          if (this.debug) {
+            console.log(
+              '[DEBUG] SchemaValidator.validate Invalid subcommand:',
+              sub,
+            );
+          }
+          errors.push(errorMsg);
         }
       }
     }
@@ -205,9 +317,14 @@ export class SchemaValidator {
 
         const value = parsed.args[argName];
         if (argSchema.required && (value === undefined || value === null)) {
-          errors.push(
-            `Argument "${argName}" is required for command "${parsed.command}".`,
-          );
+          const errorMsg = `Argument "${argName}" is required for command "${parsed.command}".`;
+          if (this.debug) {
+            console.log(
+              '[DEBUG] SchemaValidator.validate Required argument missing:',
+              argName,
+            );
+          }
+          errors.push(errorMsg);
         }
 
         if (value !== undefined && value !== null) {
@@ -228,9 +345,18 @@ export class SchemaValidator {
               : value instanceof Date
                 ? 'date'
                 : typeof value;
-            errors.push(
-              `Argument "${argName}" must be of type "${expectedType}", but got "${actualType}".`,
-            );
+            const errorMsg = `Argument "${argName}" must be of type "${expectedType}", but got "${actualType}".`;
+            if (this.debug) {
+              console.log(
+                '[DEBUG] SchemaValidator.validate Type mismatch for argument:',
+                argName,
+                'expected:',
+                expectedType,
+                'got:',
+                actualType,
+              );
+            }
+            errors.push(errorMsg);
           } else {
             // Type is valid, now check additional validations
             const argErrors = this.validateArgument(argSchema, value, argName);
@@ -250,9 +376,16 @@ export class SchemaValidator {
             const value = parsed.args[argName];
 
             if (argSchema.required && (value === undefined || value === null)) {
-              errors.push(
-                `Argument "${argName}" is required for subcommand "${subcommand}" in command "${parsed.command}".`,
-              );
+              const errorMsg = `Argument "${argName}" is required for subcommand "${subcommand}" in command "${parsed.command}".`;
+              if (this.debug) {
+                console.log(
+                  '[DEBUG] SchemaValidator.validate Required subcommand argument missing:',
+                  argName,
+                  'for subcommand:',
+                  subcommand,
+                );
+              }
+              errors.push(errorMsg);
             }
 
             if (value !== undefined && value !== null) {
@@ -273,9 +406,20 @@ export class SchemaValidator {
                   : value instanceof Date
                     ? 'date'
                     : typeof value;
-                errors.push(
-                  `Argument "${argName}" for subcommand "${subcommand}" must be of type "${expectedType}", but got "${actualType}".`,
-                );
+                const errorMsg = `Argument "${argName}" for subcommand "${subcommand}" must be of type "${expectedType}", but got "${actualType}".`;
+                if (this.debug) {
+                  console.log(
+                    '[DEBUG] SchemaValidator.validate Type mismatch for subcommand argument:',
+                    argName,
+                    'subcommand:',
+                    subcommand,
+                    'expected:',
+                    expectedType,
+                    'got:',
+                    actualType,
+                  );
+                }
+                errors.push(errorMsg);
               } else {
                 // Type is valid, now check additional validations
                 const argErrors = this.validateArgument(

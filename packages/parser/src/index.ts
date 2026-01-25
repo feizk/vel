@@ -6,7 +6,6 @@ import {
 } from './types';
 import { MessageParser } from './parser';
 import { SchemaValidator } from './validator';
-import { Logger } from '@feizk/logger';
 
 /**
  * Main parser class that combines message parsing and schema validation.
@@ -16,20 +15,17 @@ export class Parser {
   private messageParser: MessageParser;
   private schemaValidator: SchemaValidator;
   private lastParsed: ParsedCommand | null = null;
-  private logger: Logger;
+  private debug: boolean;
 
   /**
    * Creates an instance of Parser.
    * @param options - The configuration options for the parser.
    */
   constructor(options: ParserOptions) {
-    this.logger = new Logger({
-      enabled: options.debug?.enabled ?? false,
-      ...options.debug,
-    });
+    this.debug = options.debug ?? false;
 
-    this.messageParser = new MessageParser(options, this.logger);
-    this.schemaValidator = new SchemaValidator(this.logger);
+    this.messageParser = new MessageParser(options, this.debug);
+    this.schemaValidator = new SchemaValidator(this.debug);
   }
 
   /**
@@ -55,34 +51,47 @@ export class Parser {
    * @returns The parsed command or null if invalid.
    */
   parse(message: string): ParsedCommand | null {
-    this.logger.debug('parse Starting parsing message', message);
+    if (this.debug) {
+      console.log('[DEBUG] parse Starting parsing message', message);
+    }
 
     const result = this.messageParser.parse(message);
     if (!result) {
-      this.logger.debug(
-        'parse Message parsing failed, returning null',
-        message,
-      );
+      if (this.debug) {
+        console.log(
+          '[DEBUG] parse Message parsing failed, returning null',
+          message,
+        );
+      }
       return null;
     }
 
-    this.logger.debug(
-      'parse Message parsed successfully',
-      result.command,
-      result.subcommands,
-      result.args,
-    );
+    if (this.debug) {
+      console.log(
+        '[DEBUG] parse Message parsed successfully',
+        result.command,
+        result.subcommands,
+        result.args,
+      );
+    }
 
     const validationErrors = this.schemaValidator.validate(result);
     if (validationErrors.length > 0) {
-      this.logger.warn('parse Validation errors found', validationErrors);
+      console.warn('[WARN] parse Validation errors found', validationErrors);
       result.validationErrors = validationErrors;
     } else {
-      this.logger.debug('parse No validation errors');
+      if (this.debug) {
+        console.log('[DEBUG] parse No validation errors');
+      }
     }
 
     this.lastParsed = result;
-    this.logger.info('parse Parsing completed successfully', result.command);
+    if (this.debug) {
+      console.log(
+        '[INFO] parse Parsing completed successfully',
+        result.command,
+      );
+    }
     return result;
   }
 }

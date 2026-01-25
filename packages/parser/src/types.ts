@@ -1,8 +1,4 @@
-import { LoggerOptions } from '@feizk/logger';
-
-export interface DebugOptions extends Partial<LoggerOptions> {
-  enabled?: boolean;
-}
+export type DebugOptions = boolean;
 
 export interface ParserOptions {
   prefix: string | string[];

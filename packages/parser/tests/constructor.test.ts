@@ -17,18 +17,7 @@ describe('Parser Constructor', () => {
   });
 
   it('should accept debug option', () => {
-    expect(
-      () => new Parser({ prefix: '!', debug: { enabled: true } }),
-    ).not.toThrow();
-    expect(
-      () => new Parser({ prefix: '!', debug: { enabled: false } }),
-    ).not.toThrow();
-    expect(
-      () =>
-        new Parser({
-          prefix: '!',
-          debug: { enabled: true, enableColors: false },
-        }),
-    ).not.toThrow();
+    expect(() => new Parser({ prefix: '!', debug: true })).not.toThrow();
+    expect(() => new Parser({ prefix: '!', debug: false })).not.toThrow();
   });
 });
