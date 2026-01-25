@@ -15,12 +15,15 @@ import { Parser } from '@feizk/parser';
 
 const parser = new Parser({ prefix: '!' });
 
-const result = parser.parse('!help filter name(test) status(active)');
+const result = await parser.parse(
+  '!help filter name(test) status(active) <@123>',
+);
 
 if (result) {
   console.log(result.command); // 'help'
   console.log(result.subcommands); // ['filter']
   console.log(result.args); // { name: 'test', status: 'active' }
+  console.log(result.mentions); // [{ type: 'user', id: '123', raw: '<@123>' }]
 }
 ```
 

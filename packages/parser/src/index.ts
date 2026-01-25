@@ -1,11 +1,6 @@
-import {
-  ParserOptions,
-  ParsedCommand,
-  CommandSchema,
-  DebugOptions,
-} from './types';
-import { MessageParser } from './parser';
-import { SchemaValidator } from './validator';
+import { ParserOptions, ParsedCommand, CommandSchema } from './types/index';
+import { MessageParser } from './core/index';
+import { SchemaValidator } from './validation/index';
 
 /**
  * Main parser class that combines message parsing and schema validation.
@@ -22,9 +17,16 @@ export class Parser {
    * @param options - The configuration options for the parser.
    */
   constructor(options: ParserOptions) {
+    if (
+      !options.prefix ||
+      (Array.isArray(options.prefix) && options.prefix.length === 0)
+    ) {
+      throw new Error('Prefix must be provided');
+    }
+
     this.debug = options.debug ?? false;
 
-    this.messageParser = new MessageParser(options, this.debug);
+    this.messageParser = new MessageParser(options);
     this.schemaValidator = new SchemaValidator(this.debug);
   }
 
@@ -50,7 +52,7 @@ export class Parser {
    * @param message - The message to parse.
    * @returns The parsed command or null if invalid.
    */
-  parse(message: string): ParsedCommand | null {
+  async parse(message: string): Promise<ParsedCommand | null> {
     if (this.debug) {
       console.log('[DEBUG] parse Starting parsing message', message);
     }
@@ -75,7 +77,7 @@ export class Parser {
       );
     }
 
-    const validationErrors = this.schemaValidator.validate(result);
+    const validationErrors = await this.schemaValidator.validate(result);
     if (validationErrors.length > 0) {
       console.warn('[WARN] parse Validation errors found', validationErrors);
       result.validationErrors = validationErrors;
@@ -97,6 +99,14 @@ export class Parser {
 }
 
 // Export all public classes and types
-export { MessageParser } from './parser';
-export { SchemaValidator } from './validator';
-export { ParsedCommand, ParserOptions, CommandSchema, DebugOptions };
+export { MessageParser } from './core/index';
+export { SchemaValidator } from './validation/index';
+export {
+  ParsedCommand,
+  ParserOptions,
+  CommandSchema,
+  DebugOptions,
+  ArgumentSchema,
+  Mention,
+  ParseError,
+} from './types/index';
