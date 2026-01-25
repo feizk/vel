@@ -58,6 +58,10 @@ importers:
         version: 1.6.1(@types/node@20.19.30)
 
   packages/parser:
+    dependencies:
+      '@feizk/logger':
+        specifier: ^1.6.0
+        version: 1.6.0
     devDependencies:
       vitest:
         specifier: ^1.6.1
@@ -685,6 +689,12 @@ packages:
         integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==,
       }
     engines: { node: ^18.18.0 || ^20.9.0 || >=21.1.0 }
+
+  '@feizk/logger@1.6.0':
+    resolution:
+      {
+        integrity: sha512-AA9G1wDGsdnR4XXwYwlRmqk9O3riXv/OxSDjdXnr/Bu/1cOva646D2yYx6cwpjZiFtAxCkM0MO16dEGHXhIJKQ==,
+      }
 
   '@humanfs/core@0.19.1':
     resolution:
@@ -3151,6 +3161,10 @@ snapshots:
     dependencies:
       '@eslint/core': 0.17.0
       levn: 0.4.1
+
+  '@feizk/logger@1.6.0':
+    dependencies:
+      chalk: 5.6.2
 
   '@humanfs/core@0.19.1': {}
 

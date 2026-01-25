@@ -33,14 +33,32 @@ export function tokenize(input: string, delimiter: string): string[] {
 }
 
 /**
- * Coerces a string value to its appropriate type (number, boolean, or string).
+ * Coerces a string value to its appropriate type (number, boolean, date, array, or string).
  * @param value - The string value to coerce.
  * @returns The coerced value.
  */
-export function coerceValue(value: string): string | number | boolean {
+export function coerceValue(value: string): unknown {
   if (value === 'true') return true;
   if (value === 'false') return false;
   const num = parseFloat(value);
   if (!isNaN(num) && num.toString() === value) return num;
+
+  // Check for date
+  const date = new Date(value);
+  if (!isNaN(date.getTime()) && !isNaN(Date.parse(value))) {
+    // Simple check: if parsing succeeds and it's a valid date
+    return date;
+  }
+
+  // Check for array (comma-separated)
+  if (value.includes(',')) {
+    return value.split(',').map((v) => coerceValue(v.trim()));
+  }
+
+  // If empty, assume it could be empty array or string, but for now return empty array if empty
+  if (value.trim() === '') {
+    return [];
+  }
+
   return value;
 }

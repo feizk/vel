@@ -17,6 +17,9 @@
     "test": "vitest",
     "test:run": "vitest run"
   },
+  "dependencies": {
+    "@feizk/logger": "^1.6.0"
+  },
   "devDependencies": {
     "vitest": "^1.6.1"
   },

@@ -38,14 +38,8 @@ describe('Parser Errors', () => {
     });
   });
 
-  it('should use custom error messages', () => {
-    const parser = new Parser({
-      prefix: 'v?',
-      errorMessages: {
-        invalidArgFormat: 'Custom error: {part} is invalid',
-        invalidNamedArg: 'Custom named error: {part} (position {index})',
-      },
-    });
+  it('should return result with errors for invalid arg format', () => {
+    const parser = new Parser({ prefix: 'v?' });
     const result = parser.parse('v?help name(general) nakedArg');
     expect(result).toEqual({
       prefixUsed: 'v?',
@@ -53,7 +47,7 @@ describe('Parser Errors', () => {
       subcommands: [],
       args: { name: 'general' },
       originalMessage: 'v?help name(general) nakedArg',
-      errors: ['Custom error: nakedArg is invalid'],
+      errors: ['Invalid argument format: "nakedArg"'],
     });
   });
 });

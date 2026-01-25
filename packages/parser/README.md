@@ -1,6 +1,6 @@
 # @feizk/parser
 
-A flexible package to parse messages for commands and arguments with configurable prefixes, schema validation, and command history.
+A flexible package to parse messages for commands and arguments with configurable prefixes, schema validation, and debug logging.
 
 ## Installation
 
@@ -15,88 +15,84 @@ import { Parser } from '@feizk/parser';
 
 const parser = new Parser({ prefix: '!' });
 
-// Basic parsing
-const result = parser.parse('!help filter category name(general) status(active)');
+const result = parser.parse('!help filter name(test) status(active)');
 
 if (result) {
   console.log(result.command); // 'help'
-  console.log(result.subcommands); // ['filter', 'category']
-  console.log(result.args); // { name: 'general', status: 'active' }
-  console.log(result.errors); // parsing errors, if any
-  console.log(result.validationErrors); // schema validation errors, if any
+  console.log(result.subcommands); // ['filter']
+  console.log(result.args); // { name: 'test', status: 'active' }
 }
-
-// Retrieve last parsed command
-const lastParsed = parser.getLastParsed();
-console.log(lastParsed); // The last ParsedCommand or null
 ```
 
-### Schema Validation
+## Options
 
-Register schemas to validate commands, subcommands, and arguments:
+| Option          | Type                             | Default     | Description                           |
+| --------------- | -------------------------------- | ----------- | ------------------------------------- |
+| `prefix`        | `string \| string[]`             | -           | **Required.** The prefix(es) to match |
+| `caseSensitive` | `boolean`                        | `false`     | Case sensitivity for prefix matching  |
+| `delimiter`     | `string`                         | `' '`       | Argument delimiter                    |
+| `argFormat`     | `'typed' \| 'equals' \| 'named'` | `'typed'`   | Argument format style                 |
+| `debug`         | `DebugOptions`                   | `undefined` | Debug logging configuration           |
 
-```typescript
-parser.registerSchema('help', {
-  allowedSubcommands: ['filter', 'category'],
-  args: {
-    name: { type: 'string', required: true },
-    count: { type: 'number' },
-    active: { type: 'boolean' },
-  },
-});
-
-parser.registerSchema('info', {
-  allowedSubcommands: ['general'],
-  args: {
-    category: { type: 'string' }, // global: optional string
-  },
-  subArgs: {
-    general: {
-      category: { type: 'string', required: true }, // required when subcommand 'general'
-    },
-  },
-});
-
-// Now parsing will validate against the schema
-const result = parser.parse('!help filter name(test) count(5) active(true)');
-if (result?.validationErrors) {
-  console.log('Validation errors:', result.validationErrors);
-}
-
-// For info command:
-// - category is optional globally
-// - category is required (and must be string) when subcommand 'general' is present
-const result2 = parser.parse('!info general'); // validationErrors: category required
-const result3 = parser.parse('!info general category=general'); // no errors
-const result4 = parser.parse('!info category=general'); // no errors (global optional)
-```
-
-### Options
-
-- `prefix`: `string | string[]` - Required. The prefix(es) to match.
-- `caseSensitive?`: `boolean` - Case sensitivity for prefix matching. Default: `false`.
-- `delimiter?`: `string` - Argument delimiter. Default: `' '`.
-- `argFormat?`: `'typed' | 'equals' | 'named'` - Argument format. Default: `'typed'`.
-- `errorMessages?`: Custom error messages.
-
-### Argument Formats
+## Argument Formats
 
 - **typed**: `key(value)` or `key("multi word")`
 - **equals**: `key=value` or `key="multi word"`
 - **named**: `--key value` or `--key "multi word"`
 
-## Type Coercion
+## Schema Validation
 
-Arguments are automatically coerced: strings like "5" to numbers, "true"/"false" to booleans.
+```typescript
+parser.registerSchema('help', {
+  allowedSubcommands: ['filter'],
+  args: {
+    name: { type: 'string', required: true, minLength: 3, maxLength: 50 },
+    status: { type: 'string', allowedValues: ['active', 'inactive'] },
+    age: { type: 'number', min: 0, max: 120 },
+    createdAt: {
+      type: 'date',
+      min: '2020-01-01T00:00:00Z',
+      max: '2030-01-01T00:00:00Z',
+    },
+    tags: { type: 'array', minItems: 1, maxItems: 10 },
+    email: { type: 'string', pattern: '^[^@]+@[^@]+\\.[^@]+$' },
+  },
+});
 
-## API
+const result = parser.parse(
+  '!help filter name(test) createdAt(2023-01-01T00:00:00Z) tags(a,b,c)',
+);
+// Validates against schema and returns validation errors if any
+```
 
-- `Parser(options: ParserOptions)`
-- `parse(message: string): ParsedCommand | null`
-- `registerSchema(command: string, schema: CommandSchema): void`
-- `getLastParsed(): ParsedCommand | null`
+### Argument Validation Options
 
-### Types
+In addition to `type` and `required`, arguments can have the following validation properties:
 
-- `ParsedCommand`: Includes `prefixUsed`, `command`, `subcommands`, `args`, `originalMessage`, `errors?`, `validationErrors?`
-- `CommandSchema`: Defines `allowedSubcommands?` and `args?` for validation
+- **String arguments**:
+  - `minLength`: Minimum length
+  - `maxLength`: Maximum length
+  - `pattern`: Regex pattern to match
+  - `allowedValues`: Array of allowed string values
+
+- **Number arguments**:
+  - `min`: Minimum value
+  - `max`: Maximum value
+  - `allowedValues`: Array of allowed number values
+
+- **Date arguments**:
+  - `min`: Minimum date (ISO string or timestamp)
+  - `max`: Maximum date (ISO string or timestamp)
+  - `allowedValues`: Array of allowed date values
+
+- **Array arguments**:
+  - `minItems`: Minimum number of items
+  - `maxItems`: Maximum number of items
+  - `allowedValues`: Array of allowed values (each item must be in this list)
+
+- **All types**:
+  - `allowedValues`: List of allowed values for the argument
+
+## License
+
+MIT
