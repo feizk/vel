@@ -127,6 +127,34 @@ export class SchemaValidator {
     return schema?.subAliases || {};
   }
 
+  private isValidType(value: unknown, type: ArgumentSchema['type']): boolean {
+    switch (type) {
+      case 'string':
+        return typeof value === 'string';
+      case 'number':
+        return typeof value === 'number';
+      case 'boolean':
+        return typeof value === 'boolean';
+      case 'date':
+        return value instanceof Date;
+      case 'array':
+        return Array.isArray(value);
+      case 'mention':
+        return (
+          typeof value === 'object' &&
+          value !== null &&
+          'type' in value &&
+          'id' in value &&
+          'raw' in value
+        );
+      case 'custom':
+        // For custom, we can't validate type here, assume valid
+        return true;
+      default:
+        return false;
+    }
+  }
+
   private async validateArguments(
     parsed: ParsedCommand,
     schema: CommandSchema,
@@ -299,30 +327,50 @@ export class SchemaValidator {
         }
         break;
 
-      case 'array':
-        if (Array.isArray(value)) {
-          if (
-            argSchema.minItems !== undefined &&
-            value.length < argSchema.minItems
-          ) {
-            errors.push(
-              `Argument "${argName}"${context} must have at least ${argSchema.minItems} items, but got ${value.length}.`,
-            );
-          }
-          if (
-            argSchema.maxItems !== undefined &&
-            value.length > argSchema.maxItems
-          ) {
-            errors.push(
-              `Argument "${argName}"${context} must have at most ${argSchema.maxItems} items, but got ${value.length}.`,
-            );
-          }
-        } else {
+      case 'array': {
+        // If value is not an array, treat it as a single-element array
+        const arrayValue = Array.isArray(value) ? value : [value];
+        if (
+          argSchema.minItems !== undefined &&
+          arrayValue.length < argSchema.minItems
+        ) {
           errors.push(
-            `Argument "${argName}"${context} must be of type "array", but got "${typeof value}".`,
+            `Argument "${argName}"${context} must have at least ${argSchema.minItems} items, but got ${arrayValue.length}.`,
           );
         }
+        if (
+          argSchema.maxItems !== undefined &&
+          arrayValue.length > argSchema.maxItems
+        ) {
+          errors.push(
+            `Argument "${argName}"${context} must have at most ${argSchema.maxItems} items, but got ${arrayValue.length}.`,
+          );
+        }
+        if (argSchema.itemType) {
+          for (let i = 0; i < arrayValue.length; i++) {
+            const element = arrayValue[i];
+            if (!this.isValidType(element, argSchema.itemType)) {
+              errors.push(
+                `Argument "${argName}"${context} element at index ${i} must be of type "${argSchema.itemType}", but got "${typeof element}".`,
+              );
+            }
+          }
+        }
+        if (argSchema.pattern) {
+          for (let i = 0; i < arrayValue.length; i++) {
+            const element = arrayValue[i];
+            if (
+              typeof element === 'string' &&
+              !new RegExp(argSchema.pattern).test(element)
+            ) {
+              errors.push(
+                `Argument "${argName}"${context} element at index ${i} must match pattern "${argSchema.pattern}", but got "${element}".`,
+              );
+            }
+          }
+        }
         break;
+      }
 
       case 'date':
         if (value instanceof Date) {

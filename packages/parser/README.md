@@ -1,6 +1,6 @@
 # @feizk/parser
 
-A flexible package to parse messages for commands and arguments with configurable prefixes, schema validation, and debug logging.
+A flexible package to parse messages for commands and arguments with configurable prefixes.
 
 ## Installation
 
@@ -15,15 +15,13 @@ import { Parser } from '@feizk/parser';
 
 const parser = new Parser({ prefix: '!' });
 
-const result = await parser.parse(
-  '!help filter name(test) status(active) <@123>',
-);
+const result = await parser.parse('!help filter name(test) <@123>');
 
 if (result) {
   console.log(result.command); // 'help'
   console.log(result.subcommands); // ['filter']
-  console.log(result.args); // { name: 'test', status: 'active' }
-  console.log(result.mentions); // [{ type: 'user', id: '123', raw: '<@123>' }]
+  console.log(result.args); // { name: 'test' }
+  console.log(result.mentions); // [{ type: 'user', id: '123' }]
 }
 ```
 
@@ -39,9 +37,9 @@ if (result) {
 
 ## Argument Formats
 
-- **typed**: `key(value)` or `key("multi word")`
-- **equals**: `key=value` or `key="multi word"`
-- **named**: `--key value` or `--key "multi word"`
+- **typed**: `key(value)`
+- **equals**: `key=value`
+- **named**: `--key value`
 
 ## Schema Validation
 
@@ -57,7 +55,13 @@ parser.registerSchema('help', {
       min: '2020-01-01T00:00:00Z',
       max: '2030-01-01T00:00:00Z',
     },
-    tags: { type: 'array', minItems: 1, maxItems: 10 },
+    tags: {
+      type: 'array',
+      minItems: 1,
+      maxItems: 10,
+      itemType: 'string',
+      pattern: '^[a-zA-Z0-9]+$',
+    },
     email: { type: 'string', pattern: '^[^@]+@[^@]+\\.[^@]+$' },
   },
 });
@@ -91,6 +95,8 @@ In addition to `type` and `required`, arguments can have the following validatio
 - **Array arguments**:
   - `minItems`: Minimum number of items
   - `maxItems`: Maximum number of items
+  - `itemType`: Type that each element must be (e.g., 'string', 'number')
+  - `pattern`: Regex pattern to match for each string element
   - `allowedValues`: Array of allowed values (each item must be in this list)
 
 - **All types**:
