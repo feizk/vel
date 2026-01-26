@@ -1,6 +1,6 @@
 # @feizk/parser
 
-A flexible package to parse messages for commands and arguments with configurable prefixes, schema validation, and debug logging.
+A flexible package to parse messages for commands and arguments with configurable prefixes.
 
 ## Installation
 
@@ -15,15 +15,13 @@ import { Parser } from '@feizk/parser';
 
 const parser = new Parser({ prefix: '!' });
 
-const result = await parser.parse(
-  '!help filter name(test) status(active) <@123>',
-);
+const result = await parser.parse('!help filter name(test) <@123>');
 
 if (result) {
   console.log(result.command); // 'help'
   console.log(result.subcommands); // ['filter']
-  console.log(result.args); // { name: 'test', status: 'active' }
-  console.log(result.mentions); // [{ type: 'user', id: '123', raw: '<@123>' }]
+  console.log(result.args); // { name: 'test' }
+  console.log(result.mentions); // [{ type: 'user', id: '123' }]
 }
 ```
 
@@ -39,62 +37,13 @@ if (result) {
 
 ## Argument Formats
 
-- **typed**: `key(value)` or `key("multi word")`
-- **equals**: `key=value` or `key="multi word"`
-- **named**: `--key value` or `--key "multi word"`
+- **typed**: `key(value)`
+- **equals**: `key=value`
+- **named**: `--key value`
 
 ## Schema Validation
 
-```typescript
-parser.registerSchema('help', {
-  allowedSubcommands: ['filter'],
-  args: {
-    name: { type: 'string', required: true, minLength: 3, maxLength: 50 },
-    status: { type: 'string', allowedValues: ['active', 'inactive'] },
-    age: { type: 'number', min: 0, max: 120 },
-    createdAt: {
-      type: 'date',
-      min: '2020-01-01T00:00:00Z',
-      max: '2030-01-01T00:00:00Z',
-    },
-    tags: { type: 'array', minItems: 1, maxItems: 10 },
-    email: { type: 'string', pattern: '^[^@]+@[^@]+\\.[^@]+$' },
-  },
-});
-
-const result = parser.parse(
-  '!help filter name(test) createdAt(2023-01-01T00:00:00Z) tags(a,b,c)',
-);
-// Validates against schema and returns validation errors if any
-```
-
-### Argument Validation Options
-
-In addition to `type` and `required`, arguments can have the following validation properties:
-
-- **String arguments**:
-  - `minLength`: Minimum length
-  - `maxLength`: Maximum length
-  - `pattern`: Regex pattern to match
-  - `allowedValues`: Array of allowed string values
-
-- **Number arguments**:
-  - `min`: Minimum value
-  - `max`: Maximum value
-  - `allowedValues`: Array of allowed number values
-
-- **Date arguments**:
-  - `min`: Minimum date (ISO string or timestamp)
-  - `max`: Maximum date (ISO string or timestamp)
-  - `allowedValues`: Array of allowed date values
-
-- **Array arguments**:
-  - `minItems`: Minimum number of items
-  - `maxItems`: Maximum number of items
-  - `allowedValues`: Array of allowed values (each item must be in this list)
-
-- **All types**:
-  - `allowedValues`: List of allowed values for the argument
+Supports schema validation for commands and arguments. Use `registerSchema()` to define validation rules.
 
 ## License
 

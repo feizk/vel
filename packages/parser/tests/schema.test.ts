@@ -179,4 +179,21 @@ describe('Parser Schema Validation', () => {
       'Argument "value" failed custom validation.',
     );
   });
+
+  it('should validate array element patterns', async () => {
+    const parser = new Parser({ prefix: '!' });
+    parser.registerSchema('test', {
+      args: {
+        emails: { type: 'array', pattern: '^[^@]+@[^@]+\\.[^@]+$' },
+      },
+    });
+
+    let result = await parser.parse('!test emails(a@b.com,invalid,x@y.z)');
+    expect(result?.validationErrors).toContain(
+      'Argument "emails" element at index 1 must match pattern "^[^@]+@[^@]+\\.[^@]+$", but got "invalid".',
+    );
+
+    result = await parser.parse('!test emails(a@b.com,c@d.e)');
+    expect(result?.validationErrors).toBeUndefined();
+  });
 });

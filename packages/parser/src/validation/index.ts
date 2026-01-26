@@ -317,6 +317,19 @@ export class SchemaValidator {
               `Argument "${argName}"${context} must have at most ${argSchema.maxItems} items, but got ${value.length}.`,
             );
           }
+          if (argSchema.pattern) {
+            for (let i = 0; i < value.length; i++) {
+              const element = value[i];
+              if (
+                typeof element === 'string' &&
+                !new RegExp(argSchema.pattern).test(element)
+              ) {
+                errors.push(
+                  `Argument "${argName}"${context} element at index ${i} must match pattern "${argSchema.pattern}", but got "${element}".`,
+                );
+              }
+            }
+          }
         } else {
           errors.push(
             `Argument "${argName}"${context} must be of type "array", but got "${typeof value}".`,
