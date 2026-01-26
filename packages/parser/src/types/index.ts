@@ -32,6 +32,7 @@ export interface ArgumentSchema {
   max?: number | string;
   minItems?: number;
   maxItems?: number;
+  itemType?: ArgumentSchema['type'];
   allowedValues?: unknown[];
   defaultValue?: ArgumentValue;
   customValidator?: (value: unknown) => boolean | Promise<boolean>;

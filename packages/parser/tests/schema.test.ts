@@ -196,4 +196,25 @@ describe('Parser Schema Validation', () => {
     result = await parser.parse('!test emails(a@b.com,c@d.e)');
     expect(result?.validationErrors).toBeUndefined();
   });
+
+  it('should validate array element types', async () => {
+    const parser = new Parser({ prefix: '!' });
+    parser.registerSchema('test', {
+      args: {
+        numbers: { type: 'array', itemType: 'number' },
+      },
+    });
+
+    let result = await parser.parse('!test numbers(1,2,three)');
+    expect(result?.validationErrors).toContain(
+      'Argument "numbers" element at index 2 must be of type "number", but got "string".',
+    );
+
+    result = await parser.parse('!test numbers(1,2,3)');
+    expect(result?.validationErrors).toBeUndefined();
+
+    // Single value should be treated as single-element array for validation
+    result = await parser.parse('!test numbers(42)');
+    expect(result?.validationErrors).toBeUndefined();
+  });
 });
