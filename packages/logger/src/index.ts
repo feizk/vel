@@ -1,9 +1,11 @@
 export { Logger } from './logger';
-export { TIMESTAMP_TYPES } from './utils';
+export { LOG_LEVEL_PRIORITIES, LEVEL_LABELS } from './constants';
 export type {
   LoggerOptions,
   LogLevel,
-  TimestampTypes,
-  TimestampType,
-  DiscordOptions,
+  LogEntry,
+  Transport,
+  TimestampOption,
+  Formatter,
+  ChildLoggerOptions,
 } from './types';

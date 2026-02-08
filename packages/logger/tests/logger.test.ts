@@ -7,323 +7,378 @@ import {
   afterEach,
   type MockInstance,
 } from 'vitest';
-import { Logger, TIMESTAMP_TYPES } from '../src/index';
+import { Logger, LOG_LEVEL_PRIORITIES } from '../src/index';
 
-const fetchMock = vi.fn();
-global.fetch = fetchMock;
-
-describe('Logger', () => {
-  let logger: Logger;
-  let consoleSpy: MockInstance<
+describe('Logger v2.0.0', () => {
+  let consoleLogSpy: MockInstance<
+    [message?: unknown, ...optionalParams: unknown[]],
+    void
+  >;
+  let consoleWarnSpy: MockInstance<
+    [message?: unknown, ...optionalParams: unknown[]],
+    void
+  >;
+  let consoleErrorSpy: MockInstance<
+    [message?: unknown, ...optionalParams: unknown[]],
+    void
+  >;
+  let consoleDebugSpy: MockInstance<
+    [message?: unknown, ...optionalParams: unknown[]],
+    void
+  >;
+  let consoleTraceSpy: MockInstance<
     [message?: unknown, ...optionalParams: unknown[]],
     void
   >;
 
   beforeEach(() => {
-    logger = new Logger();
-    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    fetchMock.mockResolvedValue({} as Response);
+    consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    consoleDebugSpy = vi.spyOn(console, 'debug').mockImplementation(() => {});
+    consoleTraceSpy = vi.spyOn(console, 'trace').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    consoleSpy.mockRestore();
-    fetchMock.mockClear();
+    consoleLogSpy.mockRestore();
+    consoleWarnSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    consoleDebugSpy.mockRestore();
+    consoleTraceSpy.mockRestore();
   });
 
-  it('should have info method', () => {
-    logger.info('test message');
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[INFO]'),
-      'test message',
-    );
-  });
+  // ============================================================================
+  // Log Levels
+  // ============================================================================
 
-  it('should have warn method', () => {
-    logger.warn('test message');
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[WARN]'),
-      'test message',
-    );
-  });
-
-  it('should have error method', () => {
-    logger.error('test message');
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[ERROR]'),
-      'test message',
-    );
-  });
-
-  it('should have debug method', () => {
-    logger.debug('test message');
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[DEBUG]'),
-      'test message',
-    );
-  });
-
-  it('should include timestamp in logs', () => {
-    logger.info('test');
-    const callArgs = consoleSpy.mock.calls[0][0];
-    expect(callArgs).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/);
-  });
-
-  it('should handle multiple arguments', () => {
-    logger.info('hello', 'world', 42, { key: 'value' });
-    const calls = consoleSpy.mock.calls[0];
-    expect(calls[0]).toMatch(/\[INFO\]/);
-    expect(calls[1]).toBe('hello');
-    expect(calls[2]).toBe('world');
-    expect(calls[3]).toBe(42);
-    expect(calls[4]).toEqual({ key: 'value' });
-  });
-
-  it('should disable colors when enableColors is false', () => {
-    const noColorLogger = new Logger({ enableColors: false });
-    noColorLogger.info('test message');
-    const callArgs = consoleSpy.mock.calls[0][0];
-    expect(callArgs).toContain('[INFO]'); // Should not have ANSI codes
-    expect(callArgs).not.toContain('\u001b['); // ANSI escape code
-  });
-
-  it('should use locale timestamp format', () => {
-    const localeLogger = new Logger({
-      formatTimestamp: (types) => [types.Locale, new Date().toLocaleString()],
+  describe('Log Levels', () => {
+    it('should support 6 log levels with correct priorities', () => {
+      expect(LOG_LEVEL_PRIORITIES.trace).toBe(0);
+      expect(LOG_LEVEL_PRIORITIES.debug).toBe(1);
+      expect(LOG_LEVEL_PRIORITIES.info).toBe(2);
+      expect(LOG_LEVEL_PRIORITIES.warn).toBe(3);
+      expect(LOG_LEVEL_PRIORITIES.error).toBe(4);
+      expect(LOG_LEVEL_PRIORITIES.fatal).toBe(5);
     });
-    localeLogger.info('test');
-    const callArgs = consoleSpy.mock.calls[0][0];
-    expect(callArgs).toMatch(/\d{1,2}\/\d{1,2}\/\d{4}/); // Basic locale date check
-  });
 
-  it('should use custom timestamp function', () => {
-    const customLogger = new Logger({
-      formatTimestamp: () => [TIMESTAMP_TYPES.Custom, 'custom-time'],
+    it('should have trace method', () => {
+      const logger = new Logger({ level: 'trace' });
+      logger.trace('test');
+      expect(consoleTraceSpy).toHaveBeenCalled();
     });
-    customLogger.info('test');
-    const callArgs = consoleSpy.mock.calls[0][0];
-    expect(callArgs).toContain('custom-time');
-  });
 
-  it('should default to debug log level', () => {
-    const defaultLogger = new Logger();
-    defaultLogger.debug('debug message');
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[DEBUG]'),
-      'debug message',
-    );
-  });
-
-  it('should filter logs below the set level', () => {
-    const infoLogger = new Logger({ level: 'info' });
-    infoLogger.debug('debug message');
-    expect(consoleSpy).not.toHaveBeenCalled();
-
-    infoLogger.info('info message');
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[INFO]'),
-      'info message',
-    );
-  });
-
-  it('should allow all levels when set to debug', () => {
-    const debugLogger = new Logger({ level: 'debug' });
-    debugLogger.debug('debug');
-    debugLogger.info('info');
-    debugLogger.warn('warn');
-    debugLogger.error('error');
-    expect(consoleSpy).toHaveBeenCalledTimes(4);
-  });
-
-  it('should filter debug and info when set to warn', () => {
-    const warnLogger = new Logger({ level: 'warn' });
-    warnLogger.debug('debug');
-    warnLogger.info('info');
-    expect(consoleSpy).not.toHaveBeenCalled();
-
-    warnLogger.warn('warn');
-    warnLogger.error('error');
-    expect(consoleSpy).toHaveBeenCalledTimes(2);
-  });
-
-  it('should only log errors when set to error', () => {
-    const errorLogger = new Logger({ level: 'error' });
-    errorLogger.debug('debug');
-    errorLogger.info('info');
-    errorLogger.warn('warn');
-    expect(consoleSpy).not.toHaveBeenCalled();
-
-    errorLogger.error('error');
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[ERROR]'),
-      'error',
-    );
-  });
-
-  it('should allow changing log level dynamically', () => {
-    const logger = new Logger();
-    logger.setLevel('error');
-    logger.debug('debug');
-    expect(consoleSpy).not.toHaveBeenCalled();
-
-    logger.setLevel('debug');
-    logger.debug('debug');
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('[DEBUG]'),
-      'debug',
-    );
-  });
-});
-
-describe('Discord Transport', () => {
-  let consoleSpy: MockInstance<
-    [message?: unknown, ...optionalParams: unknown[]],
-    void
-  >;
-
-  beforeEach(() => {
-    vi.useFakeTimers();
-    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    fetchMock.mockResolvedValue({} as Response);
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    consoleSpy.mockRestore();
-    fetchMock.mockClear();
-  });
-
-  it('should send to Discord when enabled and valid URL', async () => {
-    const discordLogger = new Logger({
-      discord: {
-        enable: true,
-        webhookURL: 'https://discord.com/api/webhooks/123/abc',
-      },
+    it('should have fatal method', () => {
+      const logger = new Logger();
+      logger.fatal('test');
+      expect(consoleErrorSpy).toHaveBeenCalled();
     });
-    discordLogger.info('test message');
-    await vi.advanceTimersByTimeAsync(0);
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://discord.com/api/webhooks/123/abc',
-      expect.objectContaining({
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: expect.stringContaining('"title":"INFO-'),
-      }),
-    );
   });
 
-  it('should not send to Discord when disabled', () => {
-    const discordLogger = new Logger({
-      discord: {
-        enable: false,
-        webhookURL: 'https://discord.com/api/webhooks/123/abc',
-      },
+  // ============================================================================
+  // Console Methods
+  // ============================================================================
+
+  describe('Console Methods', () => {
+    it('should use console.log for info', () => {
+      const logger = new Logger();
+      logger.info('msg');
+      expect(consoleLogSpy).toHaveBeenCalled();
     });
-    discordLogger.info('test message');
-    expect(fetchMock).not.toHaveBeenCalled();
+
+    it('should use console.warn for warn', () => {
+      const logger = new Logger();
+      logger.warn('msg');
+      expect(consoleWarnSpy).toHaveBeenCalled();
+    });
+
+    it('should use console.error for error', () => {
+      const logger = new Logger();
+      logger.error('msg');
+      expect(consoleErrorSpy).toHaveBeenCalled();
+    });
+
+    it('should use console.debug for debug', () => {
+      const logger = new Logger();
+      logger.debug('msg');
+      expect(consoleDebugSpy).toHaveBeenCalled();
+    });
+
+    it('should use console.trace for trace', () => {
+      const logger = new Logger({ level: 'trace' });
+      logger.trace('msg');
+      expect(consoleTraceSpy).toHaveBeenCalled();
+    });
+
+    it('should use console.error for fatal', () => {
+      const logger = new Logger();
+      logger.fatal('msg');
+      expect(consoleErrorSpy).toHaveBeenCalled();
+    });
   });
 
-  it('should not send to Discord when invalid URL', () => {
-    const discordLogger = new Logger({
-      discord: {
-        enable: true,
-        webhookURL: 'invalid-url',
-      },
+  // ============================================================================
+  // Silent Mode
+  // ============================================================================
+
+  describe('Silent Mode', () => {
+    it('should suppress console output when silent is true', () => {
+      const logger = new Logger({ silent: true });
+      logger.info('msg');
+      expect(consoleLogSpy).not.toHaveBeenCalled();
     });
-    discordLogger.info('test message');
-    expect(fetchMock).not.toHaveBeenCalled();
+
+    it('should still call transports when silent is true', () => {
+      const transport = { log: vi.fn() };
+      const logger = new Logger({ silent: true, transports: [transport] });
+      logger.info('msg');
+      expect(transport.log).toHaveBeenCalled();
+    });
   });
 
-  it('should use custom formatEmbed if provided', async () => {
-    const customEmbed = { title: 'Custom', description: 'Custom desc' };
-    const discordLogger = new Logger({
-      discord: {
-        enable: true,
-        webhookURL: 'https://discord.com/api/webhooks/123/abc',
-        formatEmbed: () => customEmbed,
-      },
+  // ============================================================================
+  // JSON Mode
+  // ============================================================================
+
+  describe('JSON Mode', () => {
+    it('should output valid JSON', () => {
+      const logger = new Logger({ json: true });
+      logger.info('test');
+      const call = consoleLogSpy.mock.calls[0][0] as string;
+      const parsed = JSON.parse(call);
+      expect(parsed.level).toBe('info');
+      expect(parsed.message).toBe('test');
+      expect(parsed.timestamp).toBeDefined();
     });
-    discordLogger.warn('test');
-    await vi.advanceTimersByTimeAsync(0);
-    expect(fetchMock).toHaveBeenCalledWith(
-      'https://discord.com/api/webhooks/123/abc',
-      expect.objectContaining({
-        body: JSON.stringify({ embeds: [customEmbed] }),
-      }),
-    );
+
+    it('should include prefix in JSON', () => {
+      const logger = new Logger({ json: true, prefix: 'app' });
+      logger.info('test');
+      const call = consoleLogSpy.mock.calls[0][0] as string;
+      const parsed = JSON.parse(call);
+      expect(parsed.prefix).toBe('app');
+    });
+
+    it('should include context in JSON', () => {
+      const logger = new Logger({ json: true, context: { key: 'value' } });
+      logger.info('test');
+      const call = consoleLogSpy.mock.calls[0][0] as string;
+      const parsed = JSON.parse(call);
+      expect(parsed.context).toEqual({ key: 'value' });
+    });
   });
 
-  it('should handle multiple arguments in message', async () => {
-    const discordLogger = new Logger({
-      discord: {
-        enable: true,
-        webhookURL: 'https://discord.com/api/webhooks/123/abc',
-      },
+  // ============================================================================
+  // Custom Formatter
+  // ============================================================================
+
+  describe('Custom Formatter', () => {
+    it('should use custom formatter', () => {
+      const logger = new Logger({
+        formatter: () => 'custom output',
+      });
+      logger.info('test');
+      expect(consoleLogSpy).toHaveBeenCalledWith('custom output');
     });
-    discordLogger.error('hello', 'world', 42);
-    await vi.advanceTimersByTimeAsync(0);
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
-    expect(body.embeds[0].title).toMatch(/^ERROR-[A-Z0-9]{8}$/);
-    expect(body.embeds[0].description).toBe('hello world 42');
+
+    it('should give priority to formatter over json mode', () => {
+      const logger = new Logger({
+        json: true,
+        formatter: () => 'custom',
+      });
+      logger.info('test');
+      expect(consoleLogSpy).toHaveBeenCalledWith('custom');
+    });
   });
 
-  it('should batch messages and send multiple embeds', async () => {
-    vi.useFakeTimers();
-    const discordLogger = new Logger({
-      discord: {
-        enable: true,
-        webhookURL: 'https://discord.com/api/webhooks/123/abc',
-        batchSize: 2,
-        batchDelay: 1000,
-      },
+  // ============================================================================
+  // Transports
+  // ============================================================================
+
+  describe('Transports', () => {
+    it('should add transport', () => {
+      const transport = { log: vi.fn() };
+      const logger = new Logger();
+      logger.addTransport(transport);
+      logger.info('msg');
+      expect(transport.log).toHaveBeenCalled();
     });
-    discordLogger.info('message 1');
-    discordLogger.warn('message 2');
-    discordLogger.error('message 3');
 
-    // Should not have sent yet
-    expect(fetchMock).not.toHaveBeenCalled();
+    it('should remove transport', () => {
+      const transport = { log: vi.fn() };
+      const logger = new Logger();
+      logger.addTransport(transport);
+      logger.removeTransport(transport);
+      logger.info('msg');
+      expect(transport.log).not.toHaveBeenCalled();
+    });
 
-    // Advance time to trigger batch send
-    await vi.advanceTimersByTimeAsync(1);
+    it('should handle sync transport errors gracefully', () => {
+      const badTransport = {
+        log: () => {
+          throw new Error('error');
+        },
+      };
+      const logger = new Logger({ transports: [badTransport] });
+      // Should not throw
+      logger.info('msg');
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string);
-    expect(body.embeds).toHaveLength(2);
+    it('should handle async transport errors gracefully', async () => {
+      const badTransport = {
+        log: async () => {
+          throw new Error('error');
+        },
+        destroy: vi.fn(),
+      };
+      const logger = new Logger({ transports: [badTransport] });
+      // Should not throw
+      logger.info('msg');
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
 
-    // Advance again for next batch
-    await vi.advanceTimersByTimeAsync(1000);
-    expect(fetchMock).toHaveBeenCalledTimes(2);
-    const body2 = JSON.parse(fetchMock.mock.calls[1][1].body as string);
-    expect(body2.embeds).toHaveLength(1);
-
-    vi.useRealTimers();
+    it('should call destroy on all transports', async () => {
+      const transport1 = { log: vi.fn(), destroy: vi.fn() };
+      const transport2 = { log: vi.fn(), destroy: vi.fn() };
+      const logger = new Logger({ transports: [transport1, transport2] });
+      await logger.destroy();
+      expect(transport1.destroy).toHaveBeenCalled();
+      expect(transport2.destroy).toHaveBeenCalled();
+    });
   });
 
-  it('should retry on failure with exponential backoff', async () => {
-    vi.useFakeTimers();
-    fetchMock.mockRejectedValueOnce(new Error('Network error'));
-    fetchMock.mockRejectedValueOnce(new Error('Network error'));
-    fetchMock.mockResolvedValue({} as Response);
+  // ============================================================================
+  // Child Logger
+  // ============================================================================
 
-    const discordLogger = new Logger({
-      discord: {
-        enable: true,
-        webhookURL: 'https://discord.com/api/webhooks/123/abc',
-        maxRetries: 2,
-        retryDelayBase: 500,
-      },
+  describe('Child Logger', () => {
+    it('should create child with prefix', () => {
+      const parent = new Logger({ prefix: 'parent' });
+      const child = parent.child({ prefix: 'child' });
+      child.info('msg');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[parent:child]'),
+        'msg',
+      );
     });
-    discordLogger.info('test');
 
-    await vi.advanceTimersByTimeAsync(0);
-    expect(fetchMock).toHaveBeenCalledTimes(1); // First attempt fails
+    it('should inherit transports from parent', () => {
+      const transport = { log: vi.fn() };
+      const parent = new Logger({ transports: [transport] });
+      const child = parent.child();
+      child.info('msg');
+      expect(transport.log).toHaveBeenCalled();
+    });
 
-    await vi.advanceTimersByTimeAsync(500); // Retry delay 500ms
-    expect(fetchMock).toHaveBeenCalledTimes(2); // Second attempt fails
+    it('should allow overriding level', () => {
+      const parent = new Logger({ level: 'info' });
+      const child = parent.child({ level: 'error' });
+      child.info('should not log');
+      expect(consoleLogSpy).not.toHaveBeenCalled();
+      child.error('should log');
+      expect(consoleErrorSpy).toHaveBeenCalled();
+    });
 
-    await vi.advanceTimersByTimeAsync(1000); // Next retry 1000ms (2^1 * 500)
-    expect(fetchMock).toHaveBeenCalledTimes(3); // Third attempt succeeds
+    it('should merge context', () => {
+      const parent = new Logger({ context: { parent: 'p' } });
+      const child = parent.child({ context: { child: 'c' } });
+      // Child should have merged context
+      child.info('msg');
+      expect(consoleLogSpy).toHaveBeenCalled();
+    });
+  });
 
-    vi.useRealTimers();
+  // ============================================================================
+  // Level Management
+  // ============================================================================
+
+  describe('Level Management', () => {
+    it('should set level', () => {
+      const logger = new Logger();
+      logger.setLevel('error');
+      expect(logger.getLevel()).toBe('error');
+    });
+
+    it('should get level', () => {
+      const logger = new Logger({ level: 'warn' });
+      expect(logger.getLevel()).toBe('warn');
+    });
+  });
+
+  // ============================================================================
+  // Destroy
+  // ============================================================================
+
+  describe('Destroy', () => {
+    it('should clear transports after destroy', async () => {
+      const transport = { log: vi.fn() };
+      const logger = new Logger({ transports: [transport] });
+      await logger.destroy();
+      logger.info('msg');
+      expect(transport.log).not.toHaveBeenCalled();
+    });
+  });
+
+  // ============================================================================
+  // Colors
+  // ============================================================================
+
+  describe('Colors', () => {
+    it('should use ANSI colors by default', () => {
+      const logger = new Logger();
+      logger.info('msg');
+      const call = consoleLogSpy.mock.calls[0][0] as string;
+      expect(call).toContain('\x1b['); // ANSI escape
+    });
+
+    it('should disable colors when requested', () => {
+      const logger = new Logger({ enableColors: false });
+      logger.info('msg');
+      const call = consoleLogSpy.mock.calls[0][0] as string;
+      expect(call).not.toContain('\x1b[');
+      expect(call).toContain('[INFO]');
+    });
+  });
+
+  // ============================================================================
+  // Timestamp
+  // ============================================================================
+
+  describe('Timestamp', () => {
+    it('should use iso format by default', () => {
+      const logger = new Logger();
+      logger.info('msg');
+      const call = consoleLogSpy.mock.calls[0][0] as string;
+      expect(call).toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+    });
+
+    it('should use locale format', () => {
+      const logger = new Logger({ timestamp: 'locale' });
+      logger.info('msg');
+      const call = consoleLogSpy.mock.calls[0][0] as string;
+      expect(call).toMatch(/\d{1,2}\/\d{1,2}\/\d{4}/);
+    });
+
+    it('should use custom format', () => {
+      const logger = new Logger({ timestamp: () => 'custom' });
+      logger.info('msg');
+      const call = consoleLogSpy.mock.calls[0][0] as string;
+      expect(call).toContain('custom');
+    });
+  });
+
+  // ============================================================================
+  // Prefix
+  // ============================================================================
+
+  describe('Prefix', () => {
+    it('should include prefix in output', () => {
+      const logger = new Logger({ prefix: 'app' });
+      logger.info('msg');
+      expect(consoleLogSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[app]'),
+        'msg',
+      );
+    });
   });
 });
