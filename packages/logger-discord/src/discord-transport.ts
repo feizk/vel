@@ -1,22 +1,15 @@
-import type { Transport, LogEntry, LogLevel } from '@feizk/logger';
+import {
+  type Transport,
+  type LogEntry,
+  type LogLevel,
+  LOG_LEVEL_PRIORITIES,
+} from '@feizk/logger';
 import {
   type DiscordTransportOptions,
   type DiscordWebhookPayload,
   DEFAULT_LEVEL_COLORS,
   DEFAULT_MIN_LEVEL,
 } from './types';
-
-/**
- * Log level priorities from @feizk/logger for filtering.
- */
-const LOG_LEVEL_PRIORITIES: Record<LogLevel, number> = {
-  trace: 0,
-  debug: 1,
-  info: 2,
-  warn: 3,
-  error: 4,
-  fatal: 5,
-};
 
 /**
  * Discord transport for @feizk/logger.
