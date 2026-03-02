@@ -69,10 +69,6 @@ export class Logger {
     this.context = this.options.context as Readonly<Record<string, unknown>>;
   }
 
-  // ============================================================================
-  // Public Log Methods
-  // ============================================================================
-
   /**
    * Log a trace message (most verbose).
    * @param args - Arguments to log
@@ -121,10 +117,6 @@ export class Logger {
     this.log('fatal', args);
   }
 
-  // ============================================================================
-  // Level Management
-  // ============================================================================
-
   /**
    * Set the minimum log level.
    * @param level - The log level to set
@@ -140,10 +132,6 @@ export class Logger {
   getLevel(): LogLevel {
     return this.options.level;
   }
-
-  // ============================================================================
-  // Transport Management
-  // ============================================================================
 
   /**
    * Add a transport to the logger.
@@ -163,10 +151,6 @@ export class Logger {
       this.transports.splice(index, 1);
     }
   }
-
-  // ============================================================================
-  // Child Logger
-  // ============================================================================
 
   /**
    * Create a child logger with additional prefix and context.
@@ -198,10 +182,6 @@ export class Logger {
     });
   }
 
-  // ============================================================================
-  // Cleanup
-  // ============================================================================
-
   /**
    * Destroy the logger and all its transports.
    * Calls destroy() on all registered transports.
@@ -216,10 +196,6 @@ export class Logger {
     await Promise.all(destroyPromises);
     this.transports.length = 0;
   }
-
-  // ============================================================================
-  // Private Methods
-  // ============================================================================
 
   /**
    * Core logging method - all public methods delegate here.

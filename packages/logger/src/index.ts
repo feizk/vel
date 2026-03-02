@@ -9,3 +9,5 @@ export type {
   Formatter,
   ChildLoggerOptions,
 } from './types';
+
+export * from './utils';
