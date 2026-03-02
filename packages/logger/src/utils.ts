@@ -62,16 +62,7 @@ export function formatTimestamp(
  * @returns JSON string representation
  */
 export function formatJson(entry: LogEntry): string {
-  const message = entry.args
-    .map((arg) => {
-      if (typeof arg === 'string') return arg;
-      try {
-        return JSON.stringify(arg);
-      } catch {
-        return String(arg);
-      }
-    })
-    .join(' ');
+  const message = entry.args.map(formatArg).join(' ');
 
   const output: Record<string, unknown> = {
     level: entry.level,
@@ -91,19 +82,65 @@ export function formatJson(entry: LogEntry): string {
 }
 
 /**
+ * Format a value for logging, handling special types like Error, BigInt, etc.
+ * @param arg - The value to format
+ * @returns Formatted string representation
+ */
+function formatArg(arg: unknown): string {
+  if (arg === null) return 'null';
+  if (arg === undefined) return 'undefined';
+  if (typeof arg === 'string') return arg;
+  if (typeof arg === 'number') return String(arg);
+  if (typeof arg === 'boolean') return String(arg);
+  if (typeof arg === 'bigint') return `${arg}n`;
+  if (typeof arg === 'symbol') return arg.toString();
+
+  // Handle Error objects specially
+  if (arg instanceof Error) {
+    const parts = [arg.message];
+    if (arg.name && arg.name !== 'Error') parts.unshift(arg.name);
+    if (arg.stack) parts.push(arg.stack);
+    return parts.join(': ');
+  }
+
+  // Handle arrays - use compact JSON for cleaner output
+  if (Array.isArray(arg)) {
+    try {
+      return JSON.stringify(arg);
+    } catch {
+      return String(arg);
+    }
+  }
+
+  // Handle objects with circular reference safe stringify
+  try {
+    return JSON.stringify(arg, getCircularReplacer());
+  } catch {
+    return String(arg);
+  }
+}
+
+/**
+ * Returns a replacer function for JSON.stringify that handles circular references.
+ */
+function getCircularReplacer(): (key: string, value: unknown) => unknown {
+  const seen = new WeakSet();
+  return (_key: string, value: unknown) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return '[Circular]';
+      }
+      seen.add(value);
+    }
+    return value;
+  };
+}
+
+/**
  * Build the message string from log arguments.
  * @param args - The log arguments
  * @returns Formatted message string
  */
 export function buildMessage(args: unknown[]): string {
-  return args
-    .map((arg) => {
-      if (typeof arg === 'string') return arg;
-      try {
-        return JSON.stringify(arg);
-      } catch {
-        return String(arg);
-      }
-    })
-    .join(' ');
+  return args.map(formatArg).join(' ');
 }
