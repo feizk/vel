@@ -22,9 +22,7 @@
     "dev": "tsup --watch",
     "clean": "rm -rf dist",
     "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
-    "test": "vitest",
-    "test:run": "vitest run"
+    "lint:fix": "eslint src --fix"
   },
   "peerDependencies": {
     "@feizk/logger": "^2.0.0"
