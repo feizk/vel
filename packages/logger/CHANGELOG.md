@@ -1,5 +1,11 @@
 # @feizk/logger
 
+## 2.0.1
+
+### Patch Changes
+
+- ebda658: (Changeset Bug / Fix?)
+
 ## 2.1.0
 
 ### Minor Changes
