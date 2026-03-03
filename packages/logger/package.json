@@ -1,9 +1,8 @@
 {
   "name": "@feizk/logger",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "A lightweight, pluggable logger with colored outputs, structured logging, and transport support",
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
+  "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "publishConfig": {
     "access": "public"
@@ -11,7 +10,7 @@
   "exports": {
     "types": "./dist/index.d.ts",
     "import": "./dist/index.js",
-    "require": "./dist/index.cjs"
+    "require": "./dist/index.js"
   },
   "engines": {
     "node": ">=18"
