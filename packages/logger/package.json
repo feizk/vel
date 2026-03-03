@@ -1,6 +1,6 @@
 {
   "name": "@feizk/logger",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A lightweight, pluggable logger with colored outputs, structured logging, and transport support",
   "main": "dist/index.cjs",
   "module": "dist/index.js",

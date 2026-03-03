@@ -1,6 +1,6 @@
 {
   "name": "@feizk/logger-discord",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Discord transport plugin for @feizk/logger",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
@@ -25,10 +25,10 @@
     "lint:fix": "eslint src --fix"
   },
   "peerDependencies": {
-    "@feizk/logger": "^2.0.0"
+    "@feizk/logger": "^2.0.1"
   },
   "devDependencies": {
-    "@feizk/logger": "^2.0.0",
+    "@feizk/logger": "^2.0.1",
     "@types/node": "^20.0.0",
     "vitest": "^1.6.1"
   },

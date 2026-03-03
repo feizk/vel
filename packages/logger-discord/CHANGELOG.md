@@ -1,5 +1,13 @@
 # @feizk/logger-discord
 
+## 2.0.1
+
+### Patch Changes
+
+- ebda658: (Changeset Bug / Fix?)
+- Updated dependencies [ebda658]
+  - @feizk/logger@2.0.1
+
 ## 2.0.0
 
 ### Minor Changes
