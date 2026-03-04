@@ -190,6 +190,77 @@ export class DiscordTransport implements Transport {
   }
 
   /**
+   * Send payload to Discord webhook with rate limit handling.
+   * @param payload - The webhook payload to send
+   * @param retryCount - Current retry attempt number
+   */
+  private async sendWebhook(
+    payload: DiscordWebhookPayload,
+    retryCount = 0,
+  ): Promise<void> {
+    const MAX_RETRIES = 3;
+
+    try {
+      const response = await fetch(this.webhookURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      // Handle rate limiting (429 status)
+      if (response.status === 429) {
+        // Try to parse retry_after from JSON body, fallback to Retry-After header
+        let retryAfter = 1; // Default 1 second fallback
+
+        try {
+          const errorBody = (await response.json()) as {
+            retry_after?: number;
+          };
+          if (errorBody.retry_after && errorBody.retry_after > 0) {
+            retryAfter = errorBody.retry_after;
+          }
+        } catch {
+          // If JSON parsing fails, try the header
+          const headerRetry = response.headers.get('Retry-After');
+          if (headerRetry) {
+            const parsed = parseFloat(headerRetry);
+            if (!isNaN(parsed) && parsed > 0) {
+              retryAfter = parsed;
+            }
+          }
+        }
+
+        // Retry if we haven't exceeded max retries
+        if (retryCount < MAX_RETRIES) {
+          // Wait for the specified duration (retry_after is in seconds)
+          await new Promise((resolve) =>
+            setTimeout(resolve, retryAfter * 1000),
+          );
+          // Retry the request
+          return this.sendWebhook(payload, retryCount + 1);
+        }
+        // Silently drop the log if max retries exceeded
+        return;
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(
+          `[DiscordTransport] Failed to send log: ${response.status} ${response.statusText}`,
+          errorText,
+        );
+      }
+    } catch (error) {
+      console.error(
+        `[DiscordTransport] Error sending log:`,
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+
+  /**
    * Send a log entry to Discord.
    * @param entry - The log entry to send
    */
@@ -202,29 +273,7 @@ export class DiscordTransport implements Transport {
     // Chain onto the queue to ensure logs are sent in order
     this.queue = this.queue.then(async () => {
       const payload = this.buildEmbed(entry);
-
-      try {
-        const response = await fetch(this.webhookURL, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(
-            `[DiscordTransport] Failed to send log: ${response.status} ${response.statusText}`,
-            errorText,
-          );
-        }
-      } catch (error) {
-        console.error(
-          `[DiscordTransport] Error sending log:`,
-          error instanceof Error ? error.message : error,
-        );
-      }
+      await this.sendWebhook(payload);
     });
   }
 
