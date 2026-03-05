@@ -7,13 +7,23 @@ import {
 import {
   type DiscordTransportOptions,
   type DiscordWebhookPayload,
+  type DiscordEmbed,
+  type BatchingOptions,
+  type CompressionOptions,
+  type QueuePriority,
   DEFAULT_LEVEL_COLORS,
   DEFAULT_MIN_LEVEL,
+  DEFAULT_BATCHING_OPTIONS,
+  DEFAULT_COMPRESSION_OPTIONS,
+  DEFAULT_CIRCUIT_BREAKER_OPTIONS,
+  DEFAULT_PERSISTENT_QUEUE_OPTIONS,
 } from './types';
+import { CircuitBreaker } from './circuit-breaker';
+import { PersistentQueue } from './persistent-queue';
 
 /**
  * Discord transport for @feizk/logger.
- * Sends log entries to a Discord webhook.
+ * Sends log entries to a Discord webhook with batching and compression support.
  *
  * @example
  * ```typescript
@@ -37,7 +47,17 @@ export class DiscordTransport implements Transport {
   private readonly levelColors: Record<LogLevel, number>;
   private readonly includeContext: boolean;
   private readonly customPayload?: DiscordTransportOptions['customPayload'];
-  private queue: Promise<void>;
+  private readonly batching: Required<BatchingOptions>;
+  private readonly compression: Required<CompressionOptions>;
+
+  private batch: LogEntry[] = [];
+  private flushTimer: ReturnType<typeof setTimeout> | null = null;
+  private flushPromise: Promise<void> = Promise.resolve();
+  private isDestroyed = false;
+  private circuitBreaker?: CircuitBreaker;
+  private persistentQueue?: PersistentQueue;
+  private isProcessingQueue = false;
+  private queueProcessTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
    * Create a new Discord transport instance.
@@ -56,7 +76,34 @@ export class DiscordTransport implements Transport {
     this.levelColors = options.levelColors ?? DEFAULT_LEVEL_COLORS;
     this.includeContext = options.includeContext ?? true;
     this.customPayload = options.customPayload;
-    this.queue = Promise.resolve();
+
+    // Merge batching options with defaults
+    this.batching = {
+      ...DEFAULT_BATCHING_OPTIONS,
+      ...options.batching,
+    };
+
+    // Merge compression options with defaults
+    this.compression = {
+      ...DEFAULT_COMPRESSION_OPTIONS,
+      ...options.compression,
+    };
+
+    // Initialize circuit breaker if enabled
+    if (options.circuitBreaker) {
+      this.circuitBreaker = new CircuitBreaker({
+        ...DEFAULT_CIRCUIT_BREAKER_OPTIONS,
+        ...options.circuitBreaker,
+      });
+    }
+
+    // Initialize persistent queue if enabled
+    if (options.persistentQueue) {
+      this.persistentQueue = new PersistentQueue({
+        ...DEFAULT_PERSISTENT_QUEUE_OPTIONS,
+        ...options.persistentQueue,
+      });
+    }
   }
 
   /**
@@ -66,6 +113,15 @@ export class DiscordTransport implements Transport {
    */
   private shouldLog(level: LogLevel): boolean {
     return LOG_LEVEL_PRIORITIES[level] >= LOG_LEVEL_PRIORITIES[this.level];
+  }
+
+  /**
+   * Check if a log level should trigger immediate flush.
+   * @param level - The log level to check
+   * @returns Whether to flush immediately
+   */
+  private shouldFlushImmediately(level: LogLevel): boolean {
+    return this.batching.immediateFlushLevels.includes(level);
   }
 
   /**
@@ -111,22 +167,30 @@ export class DiscordTransport implements Transport {
   }
 
   /**
-   * Build a Discord embed for the log entry.
+   * Compress a large string by truncating with an indicator.
+   * For Discord embeds, we truncate instead of gzip since we can't easily
+   * upload file attachments via webhooks without multipart/form-data.
+   * @param content - The content to compress
+   * @param maxLength - Maximum length allowed
+   * @returns Compressed content
+   */
+  private compressContent(content: string, maxLength: number): string {
+    if (!this.compression.enabled || content.length <= maxLength) {
+      return content;
+    }
+
+    // Truncate and add indicator
+    const indicator = '\n\n... (truncated)';
+    const truncateLength = maxLength - indicator.length;
+    return content.slice(0, truncateLength) + indicator;
+  }
+
+  /**
+   * Build a single Discord embed for a log entry.
    * @param entry - The log entry
    * @returns Discord embed object
    */
-  private buildEmbed(entry: LogEntry): DiscordWebhookPayload {
-    // Use custom payload if provided
-    if (this.customPayload) {
-      return this.customPayload({
-        level: entry.level,
-        timestamp: entry.timestamp,
-        args: entry.args,
-        prefix: entry.prefix,
-        context: entry.context,
-      });
-    }
-
+  private buildSingleEmbed(entry: LogEntry): DiscordEmbed {
     // Build the message
     let message: string;
     if (this.formatter) {
@@ -143,43 +207,57 @@ export class DiscordTransport implements Transport {
       message = `**${levelLabel}** ${prefix}${this.formatArgs(entry.args)}`;
     }
 
+    // Discord embed description limit is 4096 characters
+    const maxDescriptionLength = 4096;
+    const truncatedMessage =
+      message.length > maxDescriptionLength
+        ? message.slice(0, maxDescriptionLength - 3) + '...'
+        : message;
+
     // Build embed
-    const embed: DiscordWebhookPayload = {
-      username: this.username,
-      avatar_url: this.avatarURL,
-      embeds: [
-        {
-          description: message,
-          timestamp: entry.timestamp,
-          color: this.levelColors[entry.level],
-          fields: [],
-        },
-      ],
+    const embed: DiscordEmbed = {
+      description: truncatedMessage,
+      timestamp: entry.timestamp,
+      color: this.levelColors[entry.level],
+      fields: [],
     };
 
     // Add context to embed if enabled
     if (this.includeContext && Object.keys(entry.context).length > 0) {
-      const contextStr = JSON.stringify(entry.context, null, 2);
+      let contextStr = JSON.stringify(entry.context, null, 2);
+
       // Discord has a field value limit of 1024 characters
-      if (contextStr.length <= 1024) {
-        embed.embeds![0].fields!.push({
-          name: 'Context',
-          value: `\`\`\`json\n${contextStr}\n\`\`\``,
-          inline: false,
-        });
-      } else {
-        // Truncate if too long
-        embed.embeds![0].fields!.push({
-          name: 'Context',
-          value: `\`\`\`json\n${contextStr.slice(0, 1021)}...\n\`\`\``,
-          inline: false,
-        });
+      // Account for markdown code block wrapper: ```json\n...\n``` = 12 chars
+      const markdownWrapperLength = 12;
+      const maxFieldLength = 1024 - markdownWrapperLength;
+
+      // Apply compression threshold first
+      if (
+        this.compression.enabled &&
+        contextStr.length > this.compression.threshold
+      ) {
+        const indicator = '\n\n... (truncated)';
+        const truncateLength = maxFieldLength - indicator.length;
+        contextStr = contextStr.slice(0, truncateLength) + indicator;
       }
+
+      // Ensure final value fits within Discord limit
+      if (contextStr.length > maxFieldLength) {
+        contextStr = contextStr.slice(0, maxFieldLength - 3) + '...';
+      }
+
+      const value = `\`\`\`json\n${contextStr}\n\`\`\``;
+
+      embed.fields!.push({
+        name: 'Context',
+        value,
+        inline: false,
+      });
     }
 
     // Add prefix as separate field if present
     if (entry.prefix) {
-      embed.embeds![0].fields!.unshift({
+      embed.fields!.unshift({
         name: 'Prefix',
         value: entry.prefix,
         inline: true,
@@ -190,15 +268,56 @@ export class DiscordTransport implements Transport {
   }
 
   /**
-   * Send payload to Discord webhook with rate limit handling.
+   * Build a Discord webhook payload for multiple log entries.
+   * Discord supports up to 10 embeds per message.
+   * @param entries - The log entries
+   * @returns Discord webhook payload
+   */
+  private buildBatchPayload(entries: LogEntry[]): DiscordWebhookPayload {
+    // Use custom payload if provided (only works with single entry)
+    if (this.customPayload && entries.length === 1) {
+      const entry = entries[0];
+      return this.customPayload({
+        level: entry.level,
+        timestamp: entry.timestamp,
+        args: entry.args,
+        prefix: entry.prefix,
+        context: entry.context,
+      });
+    }
+
+    // Build embeds for all entries
+    const embeds = entries.map((entry) => this.buildSingleEmbed(entry));
+
+    return {
+      username: this.username,
+      avatar_url: this.avatarURL,
+      embeds,
+    };
+  }
+
+  /**
+   * Send payload to Discord webhook with rate limit handling and circuit breaker.
    * @param payload - The webhook payload to send
    * @param retryCount - Current retry attempt number
+   * @param entry - Optional log entry for queueing on failure
    */
   private async sendWebhook(
     payload: DiscordWebhookPayload,
     retryCount = 0,
+    entry?: LogEntry,
   ): Promise<void> {
     const MAX_RETRIES = 3;
+
+    // Check circuit breaker before attempting
+    if (this.circuitBreaker && !this.circuitBreaker.canExecute()) {
+      // Circuit is open, queue the message if persistent queue is enabled
+      if (this.persistentQueue && entry) {
+        const priority = this.getPriorityForLevel(entry.level);
+        await this.persistentQueue.enqueue(payload, priority);
+      }
+      return;
+    }
 
     try {
       const response = await fetch(this.webhookURL, {
@@ -239,29 +358,147 @@ export class DiscordTransport implements Transport {
             setTimeout(resolve, retryAfter * 1000),
           );
           // Retry the request
-          return this.sendWebhook(payload, retryCount + 1);
+          return this.sendWebhook(payload, retryCount + 1, entry);
         }
-        // Silently drop the log if max retries exceeded
+        // Max retries exceeded, queue if persistent queue is enabled
+        if (this.persistentQueue && entry) {
+          const priority = this.getPriorityForLevel(entry.level);
+          await this.persistentQueue.enqueue(payload, priority);
+          this.scheduleQueueProcessing();
+        }
         return;
       }
 
-      if (!response.ok) {
+      if (response.ok) {
+        // Record success for circuit breaker
+        this.circuitBreaker?.recordSuccess();
+      } else {
+        // Record failure for circuit breaker
+        this.circuitBreaker?.recordFailure();
+
         const errorText = await response.text();
         console.error(
           `[DiscordTransport] Failed to send log: ${response.status} ${response.statusText}`,
           errorText,
+          response,
         );
+
+        // Queue the message if persistent queue is enabled
+        if (this.persistentQueue && entry) {
+          const priority = this.getPriorityForLevel(entry.level);
+          await this.persistentQueue.enqueue(payload, priority);
+          this.scheduleQueueProcessing();
+        }
       }
     } catch (error) {
+      // Record failure for circuit breaker
+      this.circuitBreaker?.recordFailure();
+
       console.error(
         `[DiscordTransport] Error sending log:`,
         error instanceof Error ? error.message : error,
       );
+
+      // Queue the message if persistent queue is enabled
+      if (this.persistentQueue && entry) {
+        const priority = this.getPriorityForLevel(entry.level);
+        await this.persistentQueue.enqueue(payload, priority);
+        this.scheduleQueueProcessing();
+      }
     }
   }
 
   /**
+   * Flush the current batch of logs to Discord.
+   */
+  private async flush(): Promise<void> {
+    if (this.batch.length === 0) {
+      return;
+    }
+
+    // Clear the timer if it exists
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+
+    // Take current batch and reset
+    const currentBatch = this.batch;
+    this.batch = [];
+
+    // Build and send payload
+    const payload = this.buildBatchPayload(currentBatch);
+
+    // Check circuit breaker before attempting
+    if (this.circuitBreaker && !this.circuitBreaker.canExecute()) {
+      // Circuit is open, queue all messages individually
+      if (this.persistentQueue) {
+        for (const entry of currentBatch) {
+          const singlePayload = this.buildBatchPayload([entry]);
+          const priority = this.getPriorityForLevel(entry.level);
+          await this.persistentQueue.enqueue(singlePayload, priority);
+        }
+        this.scheduleQueueProcessing();
+      }
+      return;
+    }
+
+    try {
+      const response = await fetch(this.webhookURL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        this.circuitBreaker?.recordSuccess();
+      } else {
+        this.circuitBreaker?.recordFailure();
+
+        // Queue all messages individually on failure
+        if (this.persistentQueue) {
+          for (const entry of currentBatch) {
+            const singlePayload = this.buildBatchPayload([entry]);
+            const priority = this.getPriorityForLevel(entry.level);
+            await this.persistentQueue.enqueue(singlePayload, priority);
+          }
+          this.scheduleQueueProcessing();
+        }
+      }
+    } catch {
+      this.circuitBreaker?.recordFailure();
+
+      // Queue all messages individually on error
+      if (this.persistentQueue) {
+        for (const entry of currentBatch) {
+          const singlePayload = this.buildBatchPayload([entry]);
+          const priority = this.getPriorityForLevel(entry.level);
+          await this.persistentQueue.enqueue(singlePayload, priority);
+        }
+        this.scheduleQueueProcessing();
+      }
+    }
+  }
+
+  /**
+   * Schedule a flush after the debounce delay.
+   */
+  private scheduleFlush(): void {
+    if (this.flushTimer) {
+      return; // Already scheduled
+    }
+
+    this.flushTimer = setTimeout(() => {
+      this.flushTimer = null;
+      this.flushPromise = this.flushPromise.then(() => this.flush());
+    }, this.batching.debounceMs);
+  }
+
+  /**
    * Send a log entry to Discord.
+   * Implements batching: accumulates logs and sends them in batches of up to 10 embeds.
    * @param entry - The log entry to send
    */
   async log(entry: LogEntry): Promise<void> {
@@ -270,17 +507,136 @@ export class DiscordTransport implements Transport {
       return;
     }
 
-    // Chain onto the queue to ensure logs are sent in order
-    this.queue = this.queue.then(async () => {
-      const payload = this.buildEmbed(entry);
-      await this.sendWebhook(payload);
-    });
+    // If destroyed, don't accept new logs
+    if (this.isDestroyed) {
+      return;
+    }
+
+    // If batching is disabled, send immediately
+    if (!this.batching.enabled) {
+      const payload = this.buildBatchPayload([entry]);
+      await this.sendWebhook(payload, 0, entry);
+      return;
+    }
+
+    // Add to batch
+    this.batch.push(entry);
+
+    // Check if we should flush immediately
+    if (
+      this.shouldFlushImmediately(entry.level) ||
+      this.batch.length >= this.batching.maxBatchSize
+    ) {
+      // Chain onto the flush promise to maintain order
+      this.flushPromise = this.flushPromise.then(() => this.flush());
+      return;
+    }
+
+    // Schedule a debounced flush for non-critical logs
+    this.scheduleFlush();
   }
 
   /**
-   * Cleanup method (no-op for HTTP transport).
+   * Get priority level for a log level.
+   * @param level - Log level
+   * @returns Queue priority
+   */
+  private getPriorityForLevel(level: LogLevel): QueuePriority {
+    switch (level) {
+      case 'fatal':
+        return 'critical';
+      case 'error':
+        return 'high';
+      case 'warn':
+        return 'normal';
+      default:
+        return 'low';
+    }
+  }
+
+  /**
+   * Schedule periodic queue processing.
+   */
+  private scheduleQueueProcessing(): void {
+    if (!this.persistentQueue || this.queueProcessTimer) {
+      return;
+    }
+
+    const processQueue = async (): Promise<void> => {
+      if (this.isDestroyed || !this.persistentQueue) {
+        this.queueProcessTimer = null;
+        return;
+      }
+
+      // Skip if circuit breaker is open
+      if (this.circuitBreaker?.isOpen()) {
+        this.queueProcessTimer = setTimeout(processQueue, 1000);
+        return;
+      }
+
+      // Skip if queue is empty - don't schedule next check immediately
+      // to allow process to exit when idle
+      if (this.persistentQueue.isEmpty()) {
+        this.queueProcessTimer = null;
+        return;
+      }
+
+      const message = this.persistentQueue.peek();
+      if (!message) {
+        this.queueProcessTimer = null;
+        return;
+      }
+
+      try {
+        await this.sendWebhook(message.payload as DiscordWebhookPayload);
+        this.persistentQueue.dequeue();
+      } catch {
+        // Failed to send, requeue with retry count
+        const requeued = this.persistentQueue.requeue(message);
+        if (!requeued) {
+          // Max retries exceeded, message dropped
+          this.persistentQueue.dequeue();
+        }
+      }
+
+      // Schedule next processing
+      this.queueProcessTimer = setTimeout(processQueue, 100);
+    };
+
+    // Start processing
+    void processQueue();
+  }
+
+  /**
+   * Cleanup method - flushes any pending logs.
    */
   async destroy(): Promise<void> {
-    // No cleanup needed for webhook transport
+    this.isDestroyed = true;
+
+    // Clear queue processing timer
+    if (this.queueProcessTimer) {
+      clearTimeout(this.queueProcessTimer);
+      this.queueProcessTimer = null;
+    }
+
+    // Wait for any pending flush to complete
+    await this.flushPromise;
+
+    // Flush any remaining logs
+    if (this.batch.length > 0) {
+      await this.flush();
+    }
+
+    // Clear any pending timer
+    if (this.flushTimer) {
+      clearTimeout(this.flushTimer);
+      this.flushTimer = null;
+    }
+
+    // Cleanup circuit breaker
+    this.circuitBreaker?.destroy();
+
+    // Cleanup persistent queue
+    await this.persistentQueue?.destroy();
   }
 }

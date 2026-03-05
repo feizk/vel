@@ -1,5 +1,7 @@
 import type { LogLevel } from '@feizk/logger';
 
+export type { QueuePriority } from './persistent-queue';
+
 /**
  * Discord embed field for rich messages.
  */
@@ -60,6 +62,30 @@ export interface DiscordWebhookPayload {
 }
 
 /**
+ * Options for configuring batching behavior.
+ */
+export interface BatchingOptions {
+  /** Enable log batching (default: true) */
+  enabled?: boolean;
+  /** Debounce delay in ms for non-critical logs (default: 1000) */
+  debounceMs?: number;
+  /** Maximum batch size, Discord allows 10 embeds per message (default: 10) */
+  maxBatchSize?: number;
+  /** Log levels that trigger immediate flush (default: ['error', 'fatal']) */
+  immediateFlushLevels?: LogLevel[];
+}
+
+/**
+ * Options for configuring message compression behavior.
+ */
+export interface CompressionOptions {
+  /** Enable compression for large contexts (default: true) */
+  enabled?: boolean;
+  /** Size threshold in characters for compression (default: 1024) */
+  threshold?: number;
+}
+
+/**
  * Options for configuring the Discord transport.
  */
 export interface DiscordTransportOptions {
@@ -93,6 +119,42 @@ export interface DiscordTransportOptions {
     prefix?: string;
     context: Record<string, unknown>;
   }) => DiscordWebhookPayload;
+  /** Batching configuration options */
+  batching?: BatchingOptions;
+  /** Compression configuration options */
+  compression?: CompressionOptions;
+  /** Circuit breaker configuration options */
+  circuitBreaker?: CircuitBreakerOptions;
+  /** Persistent queue configuration options */
+  persistentQueue?: PersistentQueueOptions;
+}
+
+/**
+ * Options for configuring the circuit breaker.
+ */
+export interface CircuitBreakerOptions {
+  /** Number of failures before opening circuit (default: 5) */
+  failureThreshold?: number;
+  /** Time in ms before attempting to close circuit (default: 30000) */
+  resetTimeoutMs?: number;
+  /** Number of successes required to fully close circuit (default: 1) */
+  successThreshold?: number;
+}
+
+/**
+ * Options for configuring the persistent queue.
+ */
+export interface PersistentQueueOptions {
+  /** Storage type: 'memory' or 'file' */
+  storage: 'memory' | 'file';
+  /** File path for file-based storage (default: '.vel/discord-queue.json') */
+  filePath?: string;
+  /** Maximum queue size (default: 10000) */
+  maxSize?: number;
+  /** Maximum retries for failed messages (default: 5) */
+  maxRetries?: number;
+  /** Flush interval in ms for file storage (default: 5000) */
+  flushIntervalMs?: number;
 }
 
 /**
@@ -111,3 +173,43 @@ export const DEFAULT_LEVEL_COLORS: Record<LogLevel, number> = {
  * Minimum log levels that should trigger Discord notifications by default.
  */
 export const DEFAULT_MIN_LEVEL: LogLevel = 'info';
+
+/**
+ * Default batching options.
+ */
+export const DEFAULT_BATCHING_OPTIONS: Required<BatchingOptions> = {
+  enabled: true,
+  debounceMs: 1000,
+  maxBatchSize: 10,
+  immediateFlushLevels: ['error', 'fatal'],
+};
+
+/**
+ * Default compression options.
+ */
+export const DEFAULT_COMPRESSION_OPTIONS: Required<CompressionOptions> = {
+  enabled: true,
+  threshold: 1024,
+};
+
+/**
+ * Default circuit breaker options.
+ */
+export const DEFAULT_CIRCUIT_BREAKER_OPTIONS: Required<CircuitBreakerOptions> =
+  {
+    failureThreshold: 5,
+    resetTimeoutMs: 30000,
+    successThreshold: 1,
+  };
+
+/**
+ * Default persistent queue options.
+ */
+export const DEFAULT_PERSISTENT_QUEUE_OPTIONS: Required<PersistentQueueOptions> =
+  {
+    storage: 'memory',
+    filePath: '.vel/discord-queue.json',
+    maxSize: 10000,
+    maxRetries: 5,
+    flushIntervalMs: 5000,
+  };
