@@ -170,25 +170,25 @@ Custom colors for each log level. Colors are decimal values (Discord uses decima
 new DiscordTransport({
   webhookURL: '...',
   levelColors: {
-    trace: 0x808080,  // Gray
-    debug: 0x0000ff,  // Blue
-    info: 0x00ff00,   // Green
-    warn: 0xffff00,   // Yellow
-    error: 0xff0000,  // Red
-    fatal: 0x800080,  // Purple
+    trace: 0x808080, // Gray
+    debug: 0x0000ff, // Blue
+    info: 0x00ff00, // Green
+    warn: 0xffff00, // Yellow
+    error: 0xff0000, // Red
+    fatal: 0x800080, // Purple
   },
 });
 ```
 
 #### Default Level Colors 🎨
 
-| Level | Color | Decimal |
-|-------|-------|---------|
-| `trace` | Gray | `0x95a5a6` |
-| `debug` | Blue | `0x3498db` |
-| `info` | Green | `0x2ecc71` |
-| `warn` | Yellow | `0xf1c40f` |
-| `error` | Red | `0xe74c3c` |
+| Level   | Color  | Decimal    |
+| ------- | ------ | ---------- |
+| `trace` | Gray   | `0x95a5a6` |
+| `debug` | Blue   | `0x3498db` |
+| `info`  | Green  | `0x2ecc71` |
+| `warn`  | Yellow | `0xf1c40f` |
+| `error` | Red    | `0xe74c3c` |
 | `fatal` | Purple | `0x8e44ad` |
 
 ### customPayload
@@ -228,11 +228,13 @@ new DiscordTransport({
             inline: true,
           },
           ...(context.userId
-            ? [{
-                name: 'User',
-                value: `ID: ${context.userId}`,
-                inline: true,
-              }]
+            ? [
+                {
+                  name: 'User',
+                  value: `ID: ${context.userId}`,
+                  inline: true,
+                },
+              ]
             : []),
         ],
       },
@@ -280,6 +282,7 @@ new DiscordTransport({
 ```
 
 **How it works:**
+
 1. Log arrives → added to batch
 2. Timer starts (debounceMs)
 3. If another log arrives before timer ends, timer resets
@@ -370,6 +373,7 @@ new DiscordTransport({
 ```
 
 **How it works:**
+
 - Context is stringified to JSON
 - If length > threshold, it's truncated
 - `... (truncated)` indicator is appended
@@ -560,14 +564,14 @@ new DiscordTransport({
 
 Messages are automatically assigned priority based on log level:
 
-| Log Level | Priority |
-|-----------|----------|
-| `fatal` | `critical` |
-| `error` | `high` |
-| `warn` | `normal` |
-| `info` | `low` |
-| `debug` | `low` |
-| `trace` | `low` |
+| Log Level | Priority   |
+| --------- | ---------- |
+| `fatal`   | `critical` |
+| `error`   | `high`     |
+| `warn`    | `normal`   |
+| `info`    | `low`      |
+| `debug`   | `low`      |
+| `trace`   | `low`      |
 
 Higher priority messages are processed first when retrying from the queue.
 

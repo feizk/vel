@@ -49,9 +49,9 @@ The circuit breaker pattern prevents cascade failures by temporarily stopping re
 const transport = new DiscordTransport({
   webhookURL: '...',
   circuitBreaker: {
-    failureThreshold: 5,    // Open after 5 consecutive failures
-    resetTimeoutMs: 30000,  // Wait 30s before half-open
-    successThreshold: 1,    // Close after 1 success in half-open
+    failureThreshold: 5, // Open after 5 consecutive failures
+    resetTimeoutMs: 30000, // Wait 30s before half-open
+    successThreshold: 1, // Close after 1 success in half-open
   },
 });
 ```
@@ -82,11 +82,13 @@ console.log('Failure count:', breaker.getFailureCount());
 ### When to Use
 
 ✅ **Use circuit breaker when:**
+
 - Discord API is unreliable or frequently rate-limited
 - You want to prevent overwhelming Discord during outages
 - You have other fallback mechanisms (like persistent queue)
 
 ❌ **Skip circuit breaker when:**
+
 - You're in development/testing
 - Discord API is highly reliable for your use case
 - You want immediate failure feedback
@@ -118,14 +120,14 @@ Persistent queue stores failed messages and automatically retries them. Supports
 
 Messages are prioritized based on log level:
 
-| Log Level | Priority | Order |
-|-----------|----------|-------|
-| `fatal` | `critical` | 1st |
-| `error` | `high` | 2nd |
-| `warn` | `normal` | 3rd |
-| `info` | `low` | 4th |
-| `debug` | `low` | 4th |
-| `trace` | `low` | 4th |
+| Log Level | Priority   | Order |
+| --------- | ---------- | ----- |
+| `fatal`   | `critical` | 1st   |
+| `error`   | `high`     | 2nd   |
+| `warn`    | `normal`   | 3rd   |
+| `info`    | `low`      | 4th   |
+| `debug`   | `low`      | 4th   |
+| `trace`   | `low`      | 4th   |
 
 Higher priority messages are processed first.
 
@@ -143,10 +145,12 @@ const transport = new DiscordTransport({
 ```
 
 **Pros:**
+
 - Fast, no disk I/O
 - Simple, no file management
 
 **Cons:**
+
 - Queue lost on app restart
 - Not suitable for critical logs
 
@@ -166,11 +170,13 @@ const transport = new DiscordTransport({
 ```
 
 **Pros:**
+
 - Survives app restarts
 - Persistent log history
 - Suitable for critical logs
 
 **Cons:**
+
 - Slower due to disk I/O
 - Requires file system access
 - Need to manage disk space
@@ -213,12 +219,14 @@ await queue.destroy();
 ### When to Use
 
 ✅ **Use persistent queue when:**
+
 - Logs are critical and must not be lost
 - Discord API is frequently unavailable
 - You need to survive app restarts
 - You want guaranteed delivery eventually
 
 ❌ **Skip persistent queue when:**
+
 - Logs are non-critical
 - Discord API is highly reliable
 - You don't want disk writes
@@ -342,8 +350,8 @@ new DiscordTransport({
   webhookURL: '...',
   batching: {
     enabled: true,
-    debounceMs: 1000,    // Accumulate for 1s
-    maxBatchSize: 10,    // Discord's limit
+    debounceMs: 1000, // Accumulate for 1s
+    maxBatchSize: 10, // Discord's limit
     immediateFlushLevels: ['error', 'fatal'], // Critical logs immediate
   },
 });
@@ -356,6 +364,7 @@ new DiscordTransport({
 ```
 
 **Impact:**
+
 - 100 info logs → ~10 API calls (90% reduction)
 - Error logs still immediate
 - Respects Discord rate limits
@@ -556,6 +565,7 @@ setInterval(() => {
 ### Issue: Logs not appearing
 
 **Checklist:**
+
 - ✅ Webhook URL is correct
 - ✅ Bot has permission to post in channel
 - ✅ Log level is appropriate (e.g., `debug` won't send if level is `info`)
@@ -565,6 +575,7 @@ setInterval(() => {
 ### Issue: Rate limits
 
 **Solutions:**
+
 - Enable batching (default: on)
 - Increase `debounceMs` to batch more
 - Reduce log volume or increase level threshold
@@ -573,6 +584,7 @@ setInterval(() => {
 ### Issue: Queue growing indefinitely
 
 **Checklist:**
+
 - ✅ Discord webhook is correct and accessible
 - ✅ Circuit breaker state (if open, queue will grow)
 - ✅ `maxRetries` is appropriate
@@ -582,6 +594,7 @@ setInterval(() => {
 ### Issue: High memory usage
 
 **Solutions:**
+
 - Use file storage instead of memory for large queues
 - Reduce `maxSize`
 - Process queue faster (check network/Discord API health)

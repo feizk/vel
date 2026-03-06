@@ -59,13 +59,13 @@ For comprehensive documentation, check out the **[docs/](./docs/)** folder:
 
 ## 🎨 Default Colors
 
-| Level | Color | Hex |
-|-------|-------|-----|
-| `trace` | ⚪ Gray | `0x95a5a6` |
-| `debug` | 🔵 Blue | `0x3498db` |
-| `info` | 🟢 Green | `0x2ecc71` |
-| `warn` | 🟡 Yellow | `0xf1c40f` |
-| `error` | 🔴 Red | `0xe74c3c` |
+| Level   | Color     | Hex        |
+| ------- | --------- | ---------- |
+| `trace` | ⚪ Gray   | `0x95a5a6` |
+| `debug` | 🔵 Blue   | `0x3498db` |
+| `info`  | 🟢 Green  | `0x2ecc71` |
+| `warn`  | 🟡 Yellow | `0xf1c40f` |
+| `error` | 🔴 Red    | `0xe74c3c` |
 | `fatal` | 🟣 Purple | `0x8e44ad` |
 
 ---

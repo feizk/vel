@@ -18,6 +18,7 @@ Welcome to the `@feizk/logger-discord` documentation!
 `@feizk/logger-discord` is a Discord transport plugin for [`@feizk/logger`](https://www.npmjs.com/package/@feizk/logger). Send your application logs to Discord with powerful features:
 
 ✨ **Features**
+
 - 🚀 **Batching** - Reduce API calls by up to 90%
 - 🛡️ **Circuit Breaker** - Prevent cascade failures
 - 💾 **Persistent Queue** - Never lose logs with disk persistence
@@ -122,14 +123,14 @@ Complete API documentation:
 
 ## 🎨 Default Level Colors
 
-| Level | Emoji | Color | Hex |
-|-------|-------|-------|-----|
-| `trace` | ⚪ | Gray | `0x95a5a6` |
-| `debug` | 🔵 | Blue | `0x3498db` |
-| `info` | 🟢 | Green | `0x2ecc71` |
-| `warn` | 🟡 | Yellow | `0xf1c40f` |
-| `error` | 🔴 | Red | `0xe74c3c` |
-| `fatal` | 🟣 | Purple | `0x8e44ad` |
+| Level   | Emoji | Color  | Hex        |
+| ------- | ----- | ------ | ---------- |
+| `trace` | ⚪    | Gray   | `0x95a5a6` |
+| `debug` | 🔵    | Blue   | `0x3498db` |
+| `info`  | 🟢    | Green  | `0x2ecc71` |
+| `warn`  | 🟡    | Yellow | `0xf1c40f` |
+| `error` | 🔴    | Red    | `0xe74c3c` |
+| `fatal` | 🟣    | Purple | `0x8e44ad` |
 
 ---
 

@@ -145,12 +145,13 @@ const transport = new DiscordTransport({
   formatter: ({ level, timestamp, args, prefix, context }) => {
     const time = new Date(timestamp).toLocaleTimeString();
     const prefixStr = prefix ? `[${prefix}]` : '';
-    const levelEmoji = {
-      info: 'ℹ️',
-      warn: '⚠️',
-      error: '❌',
-      fatal: '💀',
-    }[level] || '📝';
+    const levelEmoji =
+      {
+        info: 'ℹ️',
+        warn: '⚠️',
+        error: '❌',
+        fatal: '💀',
+      }[level] || '📝';
 
     return `${time} ${levelEmoji} **${level.toUpperCase()}** ${prefixStr} ${args.join(' ')}`;
   },
@@ -158,6 +159,7 @@ const transport = new DiscordTransport({
 ```
 
 **Output in Discord:**
+
 ```
 14:30:25 ℹ️ **INFO** [Auth] User logged in successfully
 ```
@@ -188,7 +190,13 @@ const transport = new DiscordTransport({
               inline: true,
             },
             ...(context.userId
-              ? [{ name: 'User ID', value: String(context.userId), inline: true }]
+              ? [
+                  {
+                    name: 'User ID',
+                    value: String(context.userId),
+                    inline: true,
+                  },
+                ]
               : []),
           ],
         },
@@ -206,7 +214,10 @@ Full TypeScript support with exported types:
 
 ```typescript
 import type { LogLevel } from '@feizk/logger';
-import { DiscordTransport, DiscordTransportOptions } from '@feizk/logger-discord';
+import {
+  DiscordTransport,
+  DiscordTransportOptions,
+} from '@feizk/logger-discord';
 
 const options: DiscordTransportOptions = {
   webhookURL: 'https://discord.com/api/webhooks/...',
@@ -278,6 +289,7 @@ process.on('SIGTERM', async () => {
 ### Rate limits
 
 The transport automatically handles Discord rate limits with retry logic. If you hit limits frequently:
+
 - Enable batching (default: enabled)
 - Reduce log volume or increase log level threshold
 
