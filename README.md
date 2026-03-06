@@ -4,9 +4,9 @@ A small monorepo containing utility packages for development.
 
 ## Packages 📦
 
-| Package                                                      | Location                             | Changelog                                      | Version                                                                                                  |
-| ------------------------------------------------------------ | ------------------------------------ | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| [@feizk/logger](https://www.npmjs.com/package/@feizk/logger) | [packages/logger](./packages/logger) | [CHANGELOG.md](./packages/logger/CHANGELOG.md) | [![npm version](https://badge.fury.io/js/@feizk%2Flogger.svg)](https://badge.fury.io/js/@feizk%2Flogger) |
+| Package                                                                      | Location                                             | Changelog                                              | Version                                                                                                                  |
+| ---------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| [@feizk/logger](https://www.npmjs.com/package/@feizk/logger)                 | [packages/logger](./packages/logger)                 | [CHANGELOG.md](./packages/logger/CHANGELOG.md)         | [![npm version](https://badge.fury.io/js/@feizk%2Flogger.svg)](https://badge.fury.io/js/@feizk%2Flogger)                 |
 | [@feizk/logger-discord](https://www.npmjs.com/package/@feizk/logger-discord) | [packages/logger-discord](./packages/logger-discord) | [CHANGELOG.md](./packages/logger-discord/CHANGELOG.md) | [![npm version](https://badge.fury.io/js/@feizk%2Flogger-discord.svg)](https://badge.fury.io/js/@feizk%2Flogger-discord) |
 
 ## Installation 🛠️
