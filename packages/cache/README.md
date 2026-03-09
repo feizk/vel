@@ -35,7 +35,7 @@ import { Cache, MemoryBackend } from '@feizk/cache';
 
 const cache = new Cache<string>({
   backend: new MemoryBackend({ maxEntries: 1000 }),
-  defaultTtl: 5 * 60 * 1000 // 5 minutes
+  defaultTtl: 5 * 60 * 1000, // 5 minutes
 });
 
 await cache.set('key', 'hello');
@@ -50,12 +50,12 @@ import { Cache, RedisBackend } from '@feizk/cache';
 const cache = new Cache<{ id: number; name: string }>({
   backend: new RedisBackend({ url: 'redis://localhost:6379' }),
   namespace: 'myapp',
-  defaultTtl: 10 * 60 * 1000 // 10 minutes
+  defaultTtl: 10 * 60 * 1000, // 10 minutes
 });
 
 const user = await cache.getOrFetch(
   `user:${id}`,
-  async () => await db.users.findById(id)
+  async () => await db.users.findById(id),
 );
 ```
 

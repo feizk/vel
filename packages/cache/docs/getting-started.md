@@ -28,7 +28,7 @@ const cache = new Cache<string>({
     maxEntries: 1000, // Maximum number of entries (default: 1000)
     // maxMemoryBytes: 10 * 1024 * 1024 // Optional memory limit (bytes)
   }),
-  defaultTtl: 5 * 60 * 1000 // 5 minutes (optional)
+  defaultTtl: 5 * 60 * 1000, // 5 minutes (optional)
 });
 ```
 
@@ -46,7 +46,7 @@ const cache = new Cache<User>({
     // keyPrefix: 'myapp:' // optional prefix
   }),
   namespace: 'myapp', // All keys will be prefixed with "myapp:"
-  defaultTtl: 10 * 60 * 1000 // 10 minutes
+  defaultTtl: 10 * 60 * 1000, // 10 minutes
 });
 ```
 
@@ -79,7 +79,7 @@ const user = await cache.getOrFetch(
     const dbUser = await db.users.findById(userId);
     return dbUser;
   },
-  { ttl: 5 * 60 * 1000 } // Optional per-call TTL
+  { ttl: 5 * 60 * 1000 }, // Optional per-call TTL
 );
 ```
 
@@ -87,11 +87,14 @@ const user = await cache.getOrFetch(
 
 ```typescript
 // Set multiple keys at once
-await cache.setMany([
-  ['key1', 'value1'],
-  ['key2', 'value2'],
-  ['key3', 'value3']
-], 60_000); // Optional TTL (1 minute)
+await cache.setMany(
+  [
+    ['key1', 'value1'],
+    ['key2', 'value2'],
+    ['key3', 'value3'],
+  ],
+  60_000,
+); // Optional TTL (1 minute)
 
 // Get multiple keys
 const values = await cache.getMany(['key1', 'key2', 'missing']);
@@ -162,7 +165,7 @@ class CustomSerializer<T> implements Serializer<T> {
 const cache = new Cache<MyType>({
   backend: new MemoryBackend(),
   serialize: (value) => customSerializer.serialize(value),
-  deserialize: (data) => customSerializer.deserialize(data)
+  deserialize: (data) => customSerializer.deserialize(data),
 });
 ```
 
@@ -173,7 +176,7 @@ Namespaces prefix all keys automatically, helping you isolate caches in shared R
 ```typescript
 const cache = new Cache({
   backend: new RedisBackend({ url: 'redis://...' }),
-  namespace: 'production:api' // Keys become "production:api:actual_key"
+  namespace: 'production:api', // Keys become "production:api:actual_key"
 });
 ```
 

@@ -38,7 +38,7 @@ import { Cache, MemoryBackend } from '@feizk/cache';
 
 const cache = new Cache<string>({
   backend: new MemoryBackend({ maxEntries: 1000 }),
-  defaultTtl: 5 * 60 * 1000 // 5 minutes
+  defaultTtl: 5 * 60 * 1000, // 5 minutes
 });
 
 await cache.set('greeting', 'Hello, world!');
@@ -69,4 +69,4 @@ MIT © [feizk](https://github.com/feizk)
 
 ---
 
-*Need help? Check the [FAQ](faq.md) or [Troubleshooting](troubleshooting.md).*
+_Need help? Check the [FAQ](faq.md) or [Troubleshooting](troubleshooting.md)._

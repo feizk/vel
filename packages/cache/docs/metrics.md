@@ -7,7 +7,7 @@
 ```typescript
 const cache = new Cache({
   backend: new RedisBackend({ url: 'redis://localhost:6379' }),
-  enableMetrics: true // <-- Turn on metrics
+  enableMetrics: true, // <-- Turn on metrics
 });
 ```
 
@@ -17,13 +17,13 @@ const cache = new Cache({
 
 ```typescript
 interface CacheMetrics {
-  hits: number;           // Number of cache hits
-  misses: number;         // Number of cache misses
-  gets: number;           // Total get operations
-  sets: number;           // Total set operations
-  deletes: number;        // Total delete operations
-  clears: number;         // Total clear operations
-  hitRate: number;        // Ratio of hits to gets (0–1)
+  hits: number; // Number of cache hits
+  misses: number; // Number of cache misses
+  gets: number; // Total get operations
+  sets: number; // Total set operations
+  deletes: number; // Total delete operations
+  clears: number; // Total clear operations
+  hitRate: number; // Ratio of hits to gets (0–1)
   avgGetDuration: number; // Average get time in milliseconds
   avgSetDuration: number; // Average set time in milliseconds
   totalGetDuration: number; // Cumulative get time (ms)
@@ -87,7 +87,7 @@ setInterval(() => {
     gets: m.gets,
     hits: m.hits,
     misses: m.misses,
-    avgGetMs: m.avgGetDuration.toFixed(2)
+    avgGetMs: m.avgGetDuration.toFixed(2),
   });
 }, 60_000);
 ```
@@ -98,4 +98,4 @@ Metrics collection adds a small amount of overhead (a few nanoseconds per operat
 
 ---
 
-*Also see: [API Reference](api-reference.md), [Troubleshooting](troubleshooting.md)*
+_Also see: [API Reference](api-reference.md), [Troubleshooting](troubleshooting.md)_

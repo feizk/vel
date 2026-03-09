@@ -4,15 +4,15 @@
 
 ## 🆚 Memory vs Redis
 
-| Feature | MemoryBackend | RedisBackend |
-|---------|---------------|--------------|
-| **Persistence** | ❌ In-memory only (lost on restart) | ✅ Persistent (RDB/AOF) |
-| **Distribution** | Single process only | ✅ Multi-process / cluster |
-| **Speed** | ⚡ Ultra-fast (nanoseconds) | ⚡ Fast (sub-millisecond) |
-| **Capacity** | Limited by RAM | Limited by Redis memory (can be larger) |
-| **TTL Precision** | Millisecond (via timer) | Millisecond (native) |
-| **Setup** | Zero config | Requires Redis server |
-| **Use Cases** | Dev, testing, single-process caching | Production, distributed systems, shared cache |
+| Feature           | MemoryBackend                        | RedisBackend                                  |
+| ----------------- | ------------------------------------ | --------------------------------------------- |
+| **Persistence**   | ❌ In-memory only (lost on restart)  | ✅ Persistent (RDB/AOF)                       |
+| **Distribution**  | Single process only                  | ✅ Multi-process / cluster                    |
+| **Speed**         | ⚡ Ultra-fast (nanoseconds)          | ⚡ Fast (sub-millisecond)                     |
+| **Capacity**      | Limited by RAM                       | Limited by Redis memory (can be larger)       |
+| **TTL Precision** | Millisecond (via timer)              | Millisecond (native)                          |
+| **Setup**         | Zero config                          | Requires Redis server                         |
+| **Use Cases**     | Dev, testing, single-process caching | Production, distributed systems, shared cache |
 
 ---
 
@@ -100,15 +100,15 @@ RedisBackend works with Redis Cluster and Sentinel automatically when you provid
 
 ## 🛠️ Choosing a Backend
 
-| Scenario | Recommendation |
-|----------|----------------|
-| Local development, quick prototyping | **MemoryBackend** (no external dependencies) |
-| Single server, moderate traffic | **RedisBackend** (persistence, easy to scale later) |
-| Multiple servers/containers | **RedisBackend** (shared cache) |
-| Very large cache (> few GB) | **RedisBackend** (leverages Redis memory management) |
-| Need sub-millisecond latency | **MemoryBackend** (but Redis is still very fast) |
-| Want cache to survive restarts | **RedisBackend** |
-| Already have Redis for other purposes | **RedisBackend** (reuse existing infrastructure) |
+| Scenario                              | Recommendation                                       |
+| ------------------------------------- | ---------------------------------------------------- |
+| Local development, quick prototyping  | **MemoryBackend** (no external dependencies)         |
+| Single server, moderate traffic       | **RedisBackend** (persistence, easy to scale later)  |
+| Multiple servers/containers           | **RedisBackend** (shared cache)                      |
+| Very large cache (> few GB)           | **RedisBackend** (leverages Redis memory management) |
+| Need sub-millisecond latency          | **MemoryBackend** (but Redis is still very fast)     |
+| Want cache to survive restarts        | **RedisBackend**                                     |
+| Already have Redis for other purposes | **RedisBackend** (reuse existing infrastructure)     |
 
 ---
 
@@ -118,17 +118,39 @@ You can implement your own backend by implementing the `CacheBackend<T>` interfa
 
 ```typescript
 class MyBackend<T> implements CacheBackend<T> {
-  async get(key: string): Promise<T | null> { /* ... */ }
-  async getMany(keys: string[]): Promise<Map<string, T>> { /* ... */ }
-  async set(key: string, value: T, options?: SetOptions): Promise<void> { /* ... */ }
-  async setMany(entries: [string, T][], options?: SetOptions): Promise<void> { /* ... */ }
-  async delete(key: string): Promise<boolean> { /* ... */ }
-  async deleteMany(keys: string[]): Promise<number> { /* ... */ }
-  async exists(key: string): Promise<boolean> { /* ... */ }
-  async clear(): Promise<void> { /* ... */ }
-  async keys(pattern?: string): Promise<string[]> { /* ... */ }
-  async getTtl(key: string): Promise<number | null> { /* ... */ }
-  async extendTtl?(key: string, ttl: number): Promise<boolean> { /* ... */ }
+  async get(key: string): Promise<T | null> {
+    /* ... */
+  }
+  async getMany(keys: string[]): Promise<Map<string, T>> {
+    /* ... */
+  }
+  async set(key: string, value: T, options?: SetOptions): Promise<void> {
+    /* ... */
+  }
+  async setMany(entries: [string, T][], options?: SetOptions): Promise<void> {
+    /* ... */
+  }
+  async delete(key: string): Promise<boolean> {
+    /* ... */
+  }
+  async deleteMany(keys: string[]): Promise<number> {
+    /* ... */
+  }
+  async exists(key: string): Promise<boolean> {
+    /* ... */
+  }
+  async clear(): Promise<void> {
+    /* ... */
+  }
+  async keys(pattern?: string): Promise<string[]> {
+    /* ... */
+  }
+  async getTtl(key: string): Promise<number | null> {
+    /* ... */
+  }
+  async extendTtl?(key: string, ttl: number): Promise<boolean> {
+    /* ... */
+  }
 }
 ```
 
@@ -136,7 +158,7 @@ Then use it:
 
 ```typescript
 const cache = new Cache({
-  backend: new MyBackend()
+  backend: new MyBackend(),
 });
 ```
 
@@ -151,4 +173,4 @@ const cache = new Cache({
 
 ---
 
-*Next: [Serialization](serialization.md) →*
+_Next: [Serialization](serialization.md) →_

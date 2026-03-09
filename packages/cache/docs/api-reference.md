@@ -21,14 +21,14 @@ new Cache<T>(options: CacheOptions<T>)
 
 #### CacheOptions<T>
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `backend` | `CacheBackend<T>` | **Required.** The storage backend (MemoryBackend, RedisBackend, or custom). |
-| `namespace?` | `string` | Optional prefix for all keys (helps with isolation). |
-| `defaultTtl?` | `number` | Default TTL in milliseconds. Omit for no expiration. |
-| `serialize?` | `(value: T) => Buffer \| string` | Custom serializer function. |
-| `deserialize?` | `(data: Buffer \| string) => T` | Custom deserializer function. |
-| `enableMetrics?` | `boolean` | Enable metrics collection (default: `false`). |
+| Property         | Type                             | Description                                                                 |
+| ---------------- | -------------------------------- | --------------------------------------------------------------------------- |
+| `backend`        | `CacheBackend<T>`                | **Required.** The storage backend (MemoryBackend, RedisBackend, or custom). |
+| `namespace?`     | `string`                         | Optional prefix for all keys (helps with isolation).                        |
+| `defaultTtl?`    | `number`                         | Default TTL in milliseconds. Omit for no expiration.                        |
+| `serialize?`     | `(value: T) => Buffer \| string` | Custom serializer function.                                                 |
+| `deserialize?`   | `(data: Buffer \| string) => T`  | Custom deserializer function.                                               |
+| `enableMetrics?` | `boolean`                        | Enable metrics collection (default: `false`).                               |
 
 ### Methods
 
@@ -123,6 +123,7 @@ getTtl(key: string): Promise<number | null>
 ```
 
 Get remaining TTL in milliseconds. Returns:
+
 - Positive number: remaining TTL
 - `-1`: key exists but has no expiration
 - `-2`: key does not exist
@@ -168,11 +169,11 @@ new MemoryBackend(options?: MemoryBackendOptions)
 
 #### MemoryBackendOptions
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `maxEntries?` | `number` | Maximum number of entries before eviction (default: `1000`). |
-| `maxMemoryBytes?` | `number` | Optional approximate memory limit in bytes. |
-| `onEvict?` | `(key: string, value: unknown) => void` | Callback when an entry is evicted. |
+| Property          | Type                                    | Description                                                  |
+| ----------------- | --------------------------------------- | ------------------------------------------------------------ |
+| `maxEntries?`     | `number`                                | Maximum number of entries before eviction (default: `1000`). |
+| `maxMemoryBytes?` | `number`                                | Optional approximate memory limit in bytes.                  |
+| `onEvict?`        | `(key: string, value: unknown) => void` | Callback when an entry is evicted.                           |
 
 **Note:** `maxEntries` is the primary limiter. If `maxMemoryBytes` is also set, the backend will attempt to respect both, but eviction is based on entry count.
 
@@ -194,13 +195,13 @@ new RedisBackend(options?: RedisBackendOptions)
 
 #### RedisBackendOptions
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `url?` | `string` | Redis connection URL (default: `redis://localhost:6379`). |
-| `client?` | `Redis` | Existing ioredis client (if provided, `url` is ignored). |
-| `keyPrefix?` | `string` | Prefix for all Redis keys (different from Cache `namespace`). |
-| `retryStrategy?` | `(times: number) => number` | Custom retry delay function. |
-| `maxRetriesPerRequest?` | `number` | Max retries per command (default: `3`). |
+| Property                | Type                        | Description                                                   |
+| ----------------------- | --------------------------- | ------------------------------------------------------------- |
+| `url?`                  | `string`                    | Redis connection URL (default: `redis://localhost:6379`).     |
+| `client?`               | `Redis`                     | Existing ioredis client (if provided, `url` is ignored).      |
+| `keyPrefix?`            | `string`                    | Prefix for all Redis keys (different from Cache `namespace`). |
+| `retryStrategy?`        | `(times: number) => number` | Custom retry delay function.                                  |
+| `maxRetriesPerRequest?` | `number`                    | Max retries per command (default: `3`).                       |
 
 #### Methods
 
@@ -296,7 +297,11 @@ All cache-related errors are instances of `CacheError` with a `code` property:
 
 ```typescript
 class CacheError extends Error {
-  code: 'REDIS_ERROR' | 'DESERIALIZATION_ERROR' | 'SERIALIZATION_ERROR' | 'BACKEND_ERROR';
+  code:
+    | 'REDIS_ERROR'
+    | 'DESERIALIZATION_ERROR'
+    | 'SERIALIZATION_ERROR'
+    | 'BACKEND_ERROR';
 }
 ```
 
@@ -304,23 +309,23 @@ class CacheError extends Error {
 
 ## 🎯 Quick Method Cheatsheet
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `get(key)` | `T \| null` | Retrieve value |
-| `set(key, value, ttl?)` | `Promise<void>` | Store value |
-| `delete(key)` | `boolean` | Remove key |
-| `has(key)` | `boolean` | Existence check |
-| `clear()` | `Promise<void>` | Remove all namespaced keys |
-| `getMany(keys)` | `(T \| null)[]` | Batch retrieve |
-| `setMany(entries, ttl?)` | `Promise<void>` | Batch store |
-| `deleteMany(keys)` | `number` | Batch delete count |
-| `getOrFetch(key, fetcher, opts?)` | `T` | Cache-aside |
-| `keys(pattern?)` | `string[]` | List keys |
-| `getTtl(key)` | `number \| null` | Remaining TTL |
-| `extendTtl(key, ttl)` | `boolean` | Reset TTL |
-| `getMetrics()` | `CacheMetrics` | Statistics |
-| `resetMetrics()` | `void` | Clear stats |
+| Method                            | Returns          | Description                |
+| --------------------------------- | ---------------- | -------------------------- |
+| `get(key)`                        | `T \| null`      | Retrieve value             |
+| `set(key, value, ttl?)`           | `Promise<void>`  | Store value                |
+| `delete(key)`                     | `boolean`        | Remove key                 |
+| `has(key)`                        | `boolean`        | Existence check            |
+| `clear()`                         | `Promise<void>`  | Remove all namespaced keys |
+| `getMany(keys)`                   | `(T \| null)[]`  | Batch retrieve             |
+| `setMany(entries, ttl?)`          | `Promise<void>`  | Batch store                |
+| `deleteMany(keys)`                | `number`         | Batch delete count         |
+| `getOrFetch(key, fetcher, opts?)` | `T`              | Cache-aside                |
+| `keys(pattern?)`                  | `string[]`       | List keys                  |
+| `getTtl(key)`                     | `number \| null` | Remaining TTL              |
+| `extendTtl(key, ttl)`             | `boolean`        | Reset TTL                  |
+| `getMetrics()`                    | `CacheMetrics`   | Statistics                 |
+| `resetMetrics()`                  | `void`           | Clear stats                |
 
 ---
 
-*Need more help? Check the [FAQ](faq.md) or [Troubleshooting](troubleshooting.md).*
+_Need more help? Check the [FAQ](faq.md) or [Troubleshooting](troubleshooting.md)._

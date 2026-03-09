@@ -6,15 +6,15 @@
 
 The built-in `JsonSerializer` uses JSON with type markers for special objects. It supports:
 
-| Type | Serialized Form | Notes |
-|------|-----------------|-------|
-| `Date` | `{ "__type": "Date", "value": "ISO-8601 string" }` | Restored as `Date` instance |
-| `RegExp` | `{ "__type": "RegExp", "source": "...", "flags": "..." }` | Restored as `RegExp` |
-| `Map` | `{ "__type": "Map", "entries": [ [k,v], ... ] }` | Restored as `Map` |
-| `Set` | `{ "__type": "Set", "values": [...] }` | Restored as `Set` |
-| `Buffer` | `{ "__type": "Buffer", "value": "base64 string" }` | Restored as `Buffer` |
-| Plain objects/arrays | Standard JSON | No type markers |
-| Primitives (string, number, boolean, null) | Standard JSON | No type markers |
+| Type                                       | Serialized Form                                           | Notes                       |
+| ------------------------------------------ | --------------------------------------------------------- | --------------------------- |
+| `Date`                                     | `{ "__type": "Date", "value": "ISO-8601 string" }`        | Restored as `Date` instance |
+| `RegExp`                                   | `{ "__type": "RegExp", "source": "...", "flags": "..." }` | Restored as `RegExp`        |
+| `Map`                                      | `{ "__type": "Map", "entries": [ [k,v], ... ] }`          | Restored as `Map`           |
+| `Set`                                      | `{ "__type": "Set", "values": [...] }`                    | Restored as `Set`           |
+| `Buffer`                                   | `{ "__type": "Buffer", "value": "base64 string" }`        | Restored as `Buffer`        |
+| Plain objects/arrays                       | Standard JSON                                             | No type markers             |
+| Primitives (string, number, boolean, null) | Standard JSON                                             | No type markers             |
 
 ### Example
 
@@ -22,19 +22,22 @@ The built-in `JsonSerializer` uses JSON with type markers for special objects. I
 import { Cache, MemoryBackend } from '@feizk/cache';
 
 const cache = new Cache<{ date: Date; map: Map<string, number> }>({
-  backend: new MemoryBackend()
+  backend: new MemoryBackend(),
 });
 
 const data = {
   date: new Date('2023-01-01'),
-  map: new Map([['a', 1], ['b', 2]])
+  map: new Map([
+    ['a', 1],
+    ['b', 2],
+  ]),
 };
 
 await cache.set('key', data);
 const retrieved = await cache.get('key');
 
 console.log(retrieved.date instanceof Date); // true
-console.log(retrieved.map instanceof Map);   // true
+console.log(retrieved.map instanceof Map); // true
 ```
 
 ## ⚠️ Limitations
@@ -46,8 +49,8 @@ The current serializer **does not recursively preserve** special types nested in
 ```typescript
 const data = {
   meta: {
-    created: new Date() // ❌ This will be a plain object after deserialization
-  }
+    created: new Date(), // ❌ This will be a plain object after deserialization
+  },
 };
 ```
 
@@ -94,7 +97,7 @@ Then pass it to the Cache constructor:
 const cache = new Cache<T>({
   backend: new MemoryBackend(),
   serialize: (value) => mySerializer.serialize(value),
-  deserialize: (data) => mySerializer.deserialize(data)
+  deserialize: (data) => mySerializer.deserialize(data),
 });
 ```
 
@@ -122,4 +125,4 @@ The serializer is **backend-agnostic**; the same serializer works with Memory an
 
 ---
 
-*Need more? See [FAQ](faq.md) or [Troubleshooting](troubleshooting.md).*
+_Need more? See [FAQ](faq.md) or [Troubleshooting](troubleshooting.md)._
