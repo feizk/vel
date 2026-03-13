@@ -183,7 +183,7 @@ export class Logger {
       timestamp: this.options.timestamp,
       formatter: this.options.formatter,
       json: this.options.json,
-      transports: this.transports,
+      transports: this.transports.slice(),
       prefix: combinedPrefix,
       context: combinedContext,
       entryIds: this.options.entryIds,
