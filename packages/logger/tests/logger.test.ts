@@ -367,6 +367,59 @@ describe('Logger v2.0.0', () => {
     });
   });
 
+
+  // ============================================================================
+  // Entry IDs / References
+  // ============================================================================
+
+  describe('Entry IDs', () => {
+    it('should include generated id in json when enabled', () => {
+      const logger = new Logger({
+        json: true,
+        entryIds: {
+          enabled: true,
+          generator: () => 'log-1',
+        },
+      });
+
+      logger.info('test');
+      const call = consoleLogSpy.mock.calls[0][0] as string;
+      const parsed = JSON.parse(call);
+      expect(parsed.id).toBe('log-1');
+    });
+
+    it('should support references via metadata methods', () => {
+      const logger = new Logger({
+        json: true,
+        entryIds: {
+          enabled: true,
+          generator: () => 'origin',
+        },
+      });
+
+      const originId = logger.infoWithMeta({}, 'origin');
+      logger.errorWithMeta(logger.reference(originId ?? 'origin'), 'followup');
+
+      const parsed = JSON.parse(consoleErrorSpy.mock.calls[0][0] as string);
+      expect(parsed.references).toEqual(['origin']);
+    });
+
+    it('should allow indexed lookup by id', () => {
+      const logger = new Logger({
+        entryIds: {
+          enabled: true,
+          store: true,
+          generator: () => 'lookup-id',
+        },
+      });
+
+      logger.info('indexed message');
+      const entry = logger.findById('lookup-id');
+      expect(entry).toBeDefined();
+      expect(entry?.args[0]).toBe('indexed message');
+    });
+  });
+
   // ============================================================================
   // Prefix
   // ============================================================================
