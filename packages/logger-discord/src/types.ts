@@ -1,4 +1,9 @@
-import type { LogLevel } from '@feizk/logger';
+import type { LogLevel, LogEntry } from '@feizk/logger';
+
+export interface DiscordLogEntry extends LogEntry {
+  id?: string;
+  references?: string[];
+}
 
 export type { QueuePriority } from './persistent-queue';
 
@@ -100,25 +105,13 @@ export interface DiscordTransportOptions {
   /** Minimum log level to send to Discord (default: 'info') */
   level?: LogLevel;
   /** Custom formatter function */
-  formatter?: (entry: {
-    level: LogLevel;
-    timestamp: string;
-    args: unknown[];
-    prefix?: string;
-    context: Record<string, unknown>;
-  }) => string;
+  formatter?: (entry: DiscordLogEntry) => string;
   /** Map log levels to Discord embed colors */
   levelColors?: Record<LogLevel, number>;
   /** Whether to include context in embeds (default: true) */
   includeContext?: boolean;
   /** Whether to send as webhook payload directly (advanced) */
-  customPayload?: (entry: {
-    level: LogLevel;
-    timestamp: string;
-    args: unknown[];
-    prefix?: string;
-    context: Record<string, unknown>;
-  }) => DiscordWebhookPayload;
+  customPayload?: (entry: DiscordLogEntry) => DiscordWebhookPayload;
   /** Batching configuration options */
   batching?: BatchingOptions;
   /** Compression configuration options */

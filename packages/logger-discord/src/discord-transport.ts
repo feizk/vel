@@ -11,6 +11,7 @@ import {
   type BatchingOptions,
   type CompressionOptions,
   type QueuePriority,
+  type DiscordLogEntry,
   DEFAULT_LEVEL_COLORS,
   DEFAULT_MIN_LEVEL,
   DEFAULT_BATCHING_OPTIONS,
@@ -50,13 +51,12 @@ export class DiscordTransport implements Transport {
   private readonly batching: Required<BatchingOptions>;
   private readonly compression: Required<CompressionOptions>;
 
-  private batch: LogEntry[] = [];
+  private batch: DiscordLogEntry[] = [];
   private flushTimer: ReturnType<typeof setTimeout> | null = null;
   private flushPromise: Promise<void> = Promise.resolve();
   private isDestroyed = false;
   private circuitBreaker?: CircuitBreaker;
   private persistentQueue?: PersistentQueue;
-  private isProcessingQueue = false;
   private queueProcessTimer: ReturnType<typeof setTimeout> | null = null;
 
   /**
@@ -190,17 +190,11 @@ export class DiscordTransport implements Transport {
    * @param entry - The log entry
    * @returns Discord embed object
    */
-  private buildSingleEmbed(entry: LogEntry): DiscordEmbed {
+  private buildSingleEmbed(entry: DiscordLogEntry): DiscordEmbed {
     // Build the message
     let message: string;
     if (this.formatter) {
-      message = this.formatter({
-        level: entry.level,
-        timestamp: entry.timestamp,
-        args: entry.args,
-        prefix: entry.prefix,
-        context: entry.context,
-      });
+      message = this.formatter(entry);
     } else {
       const levelLabel = entry.level.toUpperCase();
       const prefix = entry.prefix ? `[${entry.prefix}] ` : '';
@@ -264,6 +258,28 @@ export class DiscordTransport implements Transport {
       });
     }
 
+    if (entry.id) {
+      embed.fields!.unshift({
+        name: 'Log ID',
+        value: `\`${entry.id}\``,
+        inline: true,
+      });
+    }
+
+    if (entry.references && entry.references.length > 0) {
+      embed.fields!.push({
+        name: 'References',
+        value: entry.references
+          .map((reference: string) => `\`${reference}\``)
+          .join(', '),
+        inline: false,
+      });
+    }
+
+    if (embed.fields && embed.fields.length === 0) {
+      delete embed.fields;
+    }
+
     return embed;
   }
 
@@ -273,17 +289,11 @@ export class DiscordTransport implements Transport {
    * @param entries - The log entries
    * @returns Discord webhook payload
    */
-  private buildBatchPayload(entries: LogEntry[]): DiscordWebhookPayload {
+  private buildBatchPayload(entries: DiscordLogEntry[]): DiscordWebhookPayload {
     // Use custom payload if provided (only works with single entry)
     if (this.customPayload && entries.length === 1) {
       const entry = entries[0];
-      return this.customPayload({
-        level: entry.level,
-        timestamp: entry.timestamp,
-        args: entry.args,
-        prefix: entry.prefix,
-        context: entry.context,
-      });
+      return this.customPayload(entry);
     }
 
     // Build embeds for all entries
@@ -305,7 +315,7 @@ export class DiscordTransport implements Transport {
   private async sendWebhook(
     payload: DiscordWebhookPayload,
     retryCount = 0,
-    entry?: LogEntry,
+    entry?: DiscordLogEntry,
   ): Promise<void> {
     const MAX_RETRIES = 3;
 
@@ -502,8 +512,9 @@ export class DiscordTransport implements Transport {
    * @param entry - The log entry to send
    */
   async log(entry: LogEntry): Promise<void> {
+    const discordEntry = entry as DiscordLogEntry;
     // Check if this level should be logged
-    if (!this.shouldLog(entry.level)) {
+    if (!this.shouldLog(discordEntry.level)) {
       return;
     }
 
@@ -514,17 +525,17 @@ export class DiscordTransport implements Transport {
 
     // If batching is disabled, send immediately
     if (!this.batching.enabled) {
-      const payload = this.buildBatchPayload([entry]);
-      await this.sendWebhook(payload, 0, entry);
+      const payload = this.buildBatchPayload([discordEntry]);
+      await this.sendWebhook(payload, 0, discordEntry);
       return;
     }
 
     // Add to batch
-    this.batch.push(entry);
+    this.batch.push(discordEntry);
 
     // Check if we should flush immediately
     if (
-      this.shouldFlushImmediately(entry.level) ||
+      this.shouldFlushImmediately(discordEntry.level) ||
       this.batch.length >= this.batching.maxBatchSize
     ) {
       // Chain onto the flush promise to maintain order
