@@ -1,101 +1,80 @@
 # Metrics
 
-`@feizk/cache` can collect detailed performance metrics when `enableMetrics: true` is set in the Cache options. This data helps you understand cache effectiveness, spot bottlenecks, and tune configuration.
+Metrics are optional and disabled by default.
 
-## 📊 Enabling Metrics
+Enable them with `enableMetrics: true`.
 
-```typescript
-const cache = new Cache({
-  backend: new RedisBackend({ url: 'redis://localhost:6379' }),
-  enableMetrics: true, // <-- Turn on metrics
+```ts
+const cache = new Cache<string>({
+  backend,
+  enableMetrics: true,
 });
 ```
 
-## 📈 Metrics Object
+---
 
-`cache.getMetrics()` returns a `CacheMetrics` object:
+## Returned structure
 
-```typescript
+```ts
 interface CacheMetrics {
-  hits: number; // Number of cache hits
-  misses: number; // Number of cache misses
-  gets: number; // Total get operations
-  sets: number; // Total set operations
-  deletes: number; // Total delete operations
-  clears: number; // Total clear operations
-  hitRate: number; // Ratio of hits to gets (0–1)
-  avgGetDuration: number; // Average get time in milliseconds
-  avgSetDuration: number; // Average set time in milliseconds
-  totalGetDuration: number; // Cumulative get time (ms)
-  totalSetDuration: number; // Cumulative set time (ms)
-  backend: Record<string, unknown>; // Backend-specific stats
+  hits: number;
+  misses: number;
+  gets: number;
+  sets: number;
+  deletes: number;
+  clears: number;
+  avgGetDuration: number;
+  avgSetDuration: number;
+  totalGetDuration: number;
+  totalSetDuration: number;
+  backend: Record<string, unknown>;
 }
 ```
 
-## 🧮 Understanding the Numbers
+---
 
-### Hit Rate
+## Field meanings
 
-```
-hitRate = hits / gets
-```
-
-A high hit rate (e.g., 0.9 or 90%) means the cache is effectively serving requests. A low hit rate may indicate:
-
-- TTL too short (entries expire before reuse)
-- Cache size too small (entries evicted too quickly)
-- Poor cache key selection (keys not reused)
-- Workload not cacheable (unique requests every time)
-
-### Durations
-
-- `avgGetDuration`: Average time spent retrieving values (including backend latency).
-- `avgSetDuration`: Average time spent storing values.
-
-These help you compare backend performance (e.g., Memory vs Redis) and spot network issues.
-
-### Backend Stats
-
-The `backend` field contains backend-specific metrics:
-
-- **MemoryBackend**: `{ size, totalMemoryBytes, maxEntries, maxMemoryBytes }`
-- **RedisBackend**: `{ connected, keyPrefix }`
-
-You can also call `backend.getStats()` directly for more detailed info.
-
-## 🔄 Resetting Metrics
-
-Call `cache.resetMetrics()` to zero all counters and durations. Useful for taking measurements over a specific interval.
-
-```typescript
-// Start measuring
-cache.resetMetrics();
-
-// ... run workload ...
-
-const metrics = cache.getMetrics();
-console.log(`Hit rate: ${(metrics.hitRate * 100).toFixed(1)}%`);
-```
-
-## 📊 Example: Monitoring
-
-```typescript
-setInterval(() => {
-  const m = cache.getMetrics();
-  console.log({
-    hitRate: `${(m.hitRate * 100).toFixed(1)}%`,
-    gets: m.gets,
-    hits: m.hits,
-    misses: m.misses,
-    avgGetMs: m.avgGetDuration.toFixed(2),
-  });
-}, 60_000);
-```
-
-## ⚠️ Performance Overhead
-
-Metrics collection adds a small amount of overhead (a few nanoseconds per operation). It is safe to enable in production, but you can disable it (`enableMetrics: false`) if you need maximum performance.
+- `hits`: successful cache reads.
+- `misses`: missing reads.
+- `gets`: total read operations.
+- `sets`: total write operations.
+- `deletes`: delete operation count.
+- `clears`: clear operation count.
+- `avgGetDuration`: mean get duration in ms.
+- `avgSetDuration`: mean set duration in ms.
+- `totalGetDuration`: sum of get durations in ms.
+- `totalSetDuration`: sum of set durations in ms.
+- `backend`: backend-specific diagnostics (`MemoryBackend` or `RedisBackend` stats).
 
 ---
 
-_Also see: [API Reference](api-reference.md), [Troubleshooting](troubleshooting.md)_
+## Example
+
+```ts
+await cache.set('a', '1');
+await cache.get('a'); // hit
+await cache.get('missing'); // miss
+
+const metrics = cache.getMetrics();
+console.log(metrics);
+```
+
+---
+
+## Resetting metrics
+
+```ts
+cache.resetMetrics();
+```
+
+Useful for interval-based monitoring snapshots.
+
+---
+
+## Operational guidance
+
+- Compare `hits` vs `misses` over fixed windows.
+- Track `avgGetDuration` to detect backend latency regressions.
+- Correlate misses with TTL policy and key churn.
+- Use backend stats for memory pressure and connection state indicators.
