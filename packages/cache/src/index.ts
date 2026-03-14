@@ -17,6 +17,7 @@ export { JsonSerializer, createJsonSerializer } from './serializers/json';
 // Types
 export type {
   CacheBackend,
+  CacheLogger,
   CacheOptions,
   CacheEntry,
   CacheError,
@@ -24,6 +25,7 @@ export type {
   FetchOptions,
   LRUNode,
   MemoryBackendOptions,
+  MemoryLayerOptions,
   RedisBackendOptions,
   SetOptions,
 } from './types';
