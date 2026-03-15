@@ -1,6 +1,6 @@
 {
   "name": "@feizk/cache",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Type-safe, multi-backend caching library for Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
