@@ -5,6 +5,15 @@
 
 import type { Redis } from 'ioredis';
 
+export interface CacheLogger {
+  debug: (...args: unknown[]) => void;
+}
+
+export interface MemoryLayerOptions {
+  enabled?: boolean;
+  maxEntries?: number;
+}
+
 /**
  * Options for setting a cache entry.
  */
@@ -89,6 +98,20 @@ export interface CacheOptions<T> {
    * Enable metrics collection. Default: false.
    */
   enableMetrics?: boolean;
+  /**
+   * Enable detailed debug logging.
+   */
+  debug?: boolean;
+  /**
+   * Custom logger instance compatible with @feizk/logger.
+   */
+  logger?: CacheLogger;
+  /**
+   * Optional in-memory L1 cache.
+   * - true: enable with defaults
+   * - object: enable with custom options
+   */
+  memory?: boolean | MemoryLayerOptions;
 }
 
 /**

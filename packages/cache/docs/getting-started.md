@@ -1,205 +1,178 @@
-# Getting Started with @feizk/cache
+# Getting Started
 
-## 📦 Installation
+This guide walks you from zero setup to a production-style two-tier cache configuration.
+
+---
+
+## Installation
 
 ```bash
 pnpm add @feizk/cache
-# or
-npm install @feizk/cache
 ```
 
-## 🎯 Core Concepts
+If you use Redis backend:
 
-`@feizk/cache` provides a generic `Cache<T>` class that works with any data type. You plug in a backend (Memory or Redis) and enjoy type-safe caching with optional TTL, metrics, and more.
+```bash
+pnpm add ioredis
+```
 
-## 🔧 Basic Usage
+---
 
-### 1. Choose a Backend
+## 1) Minimal cache (memory backend only)
 
-#### Memory Backend (LRU)
-
-Ideal for single-process applications, development, or caching within a single Node instance.
-
-```typescript
+```ts
 import { Cache, MemoryBackend } from '@feizk/cache';
 
 const cache = new Cache<string>({
-  backend: new MemoryBackend({
-    maxEntries: 1000, // Maximum number of entries (default: 1000)
-    // maxMemoryBytes: 10 * 1024 * 1024 // Optional memory limit (bytes)
-  }),
-  defaultTtl: 5 * 60 * 1000, // 5 minutes (optional)
+  backend: new MemoryBackend({ maxEntries: 10_000 }),
+  defaultTtl: 60_000,
 });
+
+await cache.set('greeting', 'hello');
+const value = await cache.get('greeting');
 ```
 
-#### Redis Backend
+This is a single-process, in-memory cache.
 
-Perfect for distributed systems, multi-process setups, or when you need persistence.
+---
 
-```typescript
+## 2) Redis-backed cache
+
+```ts
 import { Cache, RedisBackend } from '@feizk/cache';
 
-const cache = new Cache<User>({
+const cache = new Cache<{ id: string; name: string }>({
   backend: new RedisBackend({
     url: 'redis://localhost:6379',
-    // password: 'yourpassword', // if needed
-    // keyPrefix: 'myapp:' // optional prefix
+    keyPrefix: 'app:',
   }),
-  namespace: 'myapp', // All keys will be prefixed with "myapp:"
-  defaultTtl: 10 * 60 * 1000, // 10 minutes
+  namespace: 'users',
+  defaultTtl: 5 * 60_000,
+});
+
+await cache.set('42', { id: '42', name: 'Ada' });
+const user = await cache.get('42');
+```
+
+Effective key shape is backend-specific prefix + namespace + key.
+
+---
+
+## 3) Two-tier cache (L1 memory + L2 backend)
+
+You can put a memory layer in front of your backend:
+
+```ts
+import { Cache, RedisBackend } from '@feizk/cache';
+
+const cache = new Cache<string>({
+  backend: new RedisBackend({ url: 'redis://localhost:6379' }),
+  memory: true,
+  defaultTtl: 30_000,
 });
 ```
 
-### 2. Perform Cache Operations
+### Read flow when `memory` is enabled
 
-```typescript
-// Set a value
-await cache.set('user:123', { id: 123, name: 'Alice' });
+1. Check memory.
+2. If memory hit, return immediately.
+3. If memory miss, read backend.
+4. If backend hit, populate memory with backend TTL alignment.
 
-// Get a value (returns null if missing)
-const user = await cache.get('user:123');
+### Write flow when `memory` is enabled
 
-// Check existence
-const exists = await cache.has('user:123');
+- `set` / `update`: write backend, then update memory.
+- `delete` / `deleteMany`: remove from backend, then remove from memory.
+- `setMany`: write backend batch, then update memory entries.
+- `extendTtl`: extend backend TTL and mirror in memory if present.
 
-// Delete a key
-await cache.delete('user:123');
+---
 
-// Clear all namespaced keys
+## 4) Debug logging
+
+Enable detailed cache logs:
+
+```ts
+import { Cache, RedisBackend } from '@feizk/cache';
+
+const cache = new Cache<string>({
+  backend: new RedisBackend({ url: 'redis://localhost:6379' }),
+  memory: true,
+  debug: true,
+});
+```
+
+### Custom logger
+
+```ts
+import { Logger } from '@feizk/logger';
+import { Cache, RedisBackend } from '@feizk/cache';
+
+const logger = new Logger({ prefix: 'my-service-cache', level: 'debug' });
+
+const cache = new Cache<string>({
+  backend: new RedisBackend({ url: 'redis://localhost:6379' }),
+  debug: true,
+  logger,
+});
+```
+
+When `debug` is `false`, debug log calls are not emitted.
+
+---
+
+## 5) Core operations
+
+```ts
+await cache.set('k', 'v');
+await cache.update('k', 'v2');
+
+const one = await cache.get('k');
+const many = await cache.getMany(['k', 'missing']);
+
+const has = await cache.has('k');
+
+await cache.setMany([
+  ['a', '1'],
+  ['b', '2'],
+]);
+
+await cache.delete('k');
+await cache.deleteMany(['a', 'b']);
+
+const ttl = await cache.getTtl('k');
+await cache.extendTtl('k', 10_000);
+
+const keys = await cache.keys('user:*');
 await cache.clear();
 ```
 
-### 3. Use Cache-Aside Pattern
+---
 
-```typescript
-const user = await cache.getOrFetch(
-  `user:${userId}`,
-  async () => {
-    // This fetcher runs only on cache miss
-    const dbUser = await db.users.findById(userId);
-    return dbUser;
-  },
-  { ttl: 5 * 60 * 1000 }, // Optional per-call TTL
+## 6) Cache-aside helper (`getOrFetch`)
+
+```ts
+const profile = await cache.getOrFetch(
+  `profile:${id}`,
+  async () => fetchProfileFromDatabase(id),
+  { ttl: 120_000 },
 );
 ```
 
-### 4. Bulk Operations
+If value is present, it returns cached data. If not, it fetches, stores, and returns.
 
-```typescript
-// Set multiple keys at once
-await cache.setMany(
-  [
-    ['key1', 'value1'],
-    ['key2', 'value2'],
-    ['key3', 'value3'],
-  ],
-  60_000,
-); // Optional TTL (1 minute)
+---
 
-// Get multiple keys
-const values = await cache.getMany(['key1', 'key2', 'missing']);
-// Returns [ 'value1', 'value2', null ]
+## 7) Metrics
 
-// Delete multiple keys
-const deletedCount = await cache.deleteMany(['key1', 'key2']);
-```
-
-### 5. TTL Management
-
-```typescript
-// Set with TTL (overrides default)
-await cache.set('temp', 'data', 30_000); // 30 seconds
-
-// Extend TTL of an existing key
-await cache.extendTtl('temp', 60_000); // Add another 60 seconds
-
-// Check remaining TTL (ms)
-const ttl = await cache.getTtl('temp');
-// Returns: number (ms), -1 (no expiration), -2 (missing)
-```
-
-### 6. Metrics
-
-```typescript
-const metrics = cache.getMetrics();
-console.log(metrics);
-// {
-//   hits: 42,
-//   misses: 8,
-//   gets: 50,
-//   sets: 30,
-//   deletes: 5,
-//   clears: 1,
-//   hitRate: 0.84,
-//   avgGetDuration: 0.5, // ms
-//   avgSetDuration: 0.7, // ms
-//   backend: { ... } // backend-specific stats
-// }
-```
-
-## 🛠️ Advanced Configuration
-
-### Custom Serialization
-
-By default, the library uses a JSON serializer that preserves special types (Date, Map, Set, Buffer, RegExp). You can provide your own serializer:
-
-```typescript
-import { Serializer } from '@feizk/cache';
-
-class CustomSerializer<T> implements Serializer<T> {
-  serialize(value: T): string {
-    // Your custom serialization logic
-    return JSON.stringify(value);
-  }
-
-  deserialize(data: Buffer | string): T {
-    // Your custom deserialization logic
-    return JSON.parse(data.toString()) as T;
-  }
-
-  getSize(value: T): number {
-    return Buffer.byteLength(this.serialize(value), 'utf8');
-  }
-}
-
-const cache = new Cache<MyType>({
+```ts
+const cache = new Cache<string>({
   backend: new MemoryBackend(),
-  serialize: (value) => customSerializer.serialize(value),
-  deserialize: (data) => customSerializer.deserialize(data),
+  enableMetrics: true,
 });
+
+await cache.get('x');
+console.log(cache.getMetrics());
 ```
 
-### Namespaces
-
-Namespaces prefix all keys automatically, helping you isolate caches in shared Redis instances:
-
-```typescript
-const cache = new Cache({
-  backend: new RedisBackend({ url: 'redis://...' }),
-  namespace: 'production:api', // Keys become "production:api:actual_key"
-});
-```
-
-### Error Handling
-
-All cache errors are thrown as `CacheError` with a `code` property:
-
-```typescript
-import { CacheError } from '@feizk/cache';
-
-try {
-  await cache.get('key');
-} catch (error) {
-  if (error instanceof CacheError) {
-    console.error(error.code); // 'REDIS_ERROR', 'DESERIALIZATION_ERROR', etc.
-  }
-}
-```
-
-## 🔍 Next Steps
-
-- Read the [API Reference](api-reference.md) for complete method signatures and options.
-- Learn about [backends](backends.md) to choose the right one.
-- Understand [serialization](serialization.md) for complex types.
-- Check the [FAQ](faq.md) for common questions.
-- Visit [Troubleshooting](troubleshooting.md) if you encounter issues.
+See [Metrics](./metrics.md) for complete interpretation details.

@@ -257,3 +257,162 @@ describe('Cache', () => {
     });
   });
 });
+
+describe('Optional Memory Layer', () => {
+  type Entry = { value: string; expiresAt?: number };
+
+  class FakeRedisBackend {
+    private readonly store = new Map<string, Entry>();
+    public gets = 0;
+    public sets = 0;
+    public deletes = 0;
+
+    async get(key: string): Promise<string | null> {
+      this.gets++;
+      const entry = this.store.get(key);
+      if (!entry) return null;
+      if (entry.expiresAt !== undefined && entry.expiresAt <= Date.now()) {
+        this.store.delete(key);
+        return null;
+      }
+      return entry.value;
+    }
+
+    async getMany(keys: string[]): Promise<Map<string, string>> {
+      const result = new Map<string, string>();
+      for (const key of keys) {
+        const value = await this.get(key);
+        if (value !== null) result.set(key, value);
+      }
+      return result;
+    }
+
+    async set(
+      key: string,
+      value: string,
+      options?: { ttl?: number | null },
+    ): Promise<void> {
+      this.sets++;
+      const ttl = options?.ttl;
+      const expiresAt =
+        ttl !== undefined && ttl !== null && ttl > 0 ? Date.now() + ttl : undefined;
+      this.store.set(key, { value, expiresAt });
+    }
+
+    async setMany(
+      entries: [string, string][],
+      options?: { ttl?: number | null },
+    ): Promise<void> {
+      for (const [key, value] of entries) {
+        await this.set(key, value, options);
+      }
+    }
+
+    async delete(key: string): Promise<boolean> {
+      this.deletes++;
+      return this.store.delete(key);
+    }
+
+    async deleteMany(keys: string[]): Promise<number> {
+      let deleted = 0;
+      for (const key of keys) {
+        if (await this.delete(key)) deleted++;
+      }
+      return deleted;
+    }
+
+    async exists(key: string): Promise<boolean> {
+      return (await this.get(key)) !== null;
+    }
+
+    async clear(): Promise<void> {
+      this.store.clear();
+    }
+
+    async keys(pattern?: string): Promise<string[]> {
+      const keys = Array.from(this.store.keys());
+      if (!pattern) return keys;
+      const regex = new RegExp(`^${pattern.replace('*', '.*')}$`);
+      return keys.filter((key) => regex.test(key));
+    }
+
+    async getTtl(key: string): Promise<number> {
+      const entry = this.store.get(key);
+      if (!entry) return -2;
+      if (entry.expiresAt === undefined) return -1;
+      const remaining = entry.expiresAt - Date.now();
+      return remaining > 0 ? remaining : -2;
+    }
+
+    async extendTtl(key: string, ttl: number): Promise<boolean> {
+      const entry = this.store.get(key);
+      if (!entry) return false;
+      entry.expiresAt = Date.now() + ttl;
+      return true;
+    }
+  }
+
+  it('memory hit avoids extra redis round-trip', async () => {
+    const backend = new FakeRedisBackend();
+    const cache = new Cache<string>({ backend, memory: true });
+
+    await cache.set('user:1', 'alice');
+    const first = await cache.get('user:1');
+    const second = await cache.get('user:1');
+
+    expect(first).toBe('alice');
+    expect(second).toBe('alice');
+    expect(backend.gets).toBe(0);
+  });
+
+  it('memory miss fetches redis and populates memory', async () => {
+    const backend = new FakeRedisBackend();
+    await backend.set('profile:1', 'peter');
+
+    const cache = new Cache<string>({ backend, memory: true });
+
+    const first = await cache.get('profile:1');
+    const second = await cache.get('profile:1');
+
+    expect(first).toBe('peter');
+    expect(second).toBe('peter');
+    expect(backend.gets).toBe(1);
+  });
+
+  it('memory sync after redis set', async () => {
+    const backend = new FakeRedisBackend();
+    const cache = new Cache<string>({ backend, memory: true });
+
+    await cache.set('sync:1', 'v1');
+    await cache.update('sync:1', 'v2');
+
+    const value = await cache.get('sync:1');
+    expect(value).toBe('v2');
+    expect(backend.sets).toBe(2);
+    expect(backend.gets).toBe(0);
+  });
+
+  it('memory delete sync', async () => {
+    const backend = new FakeRedisBackend();
+    const cache = new Cache<string>({ backend, memory: true });
+
+    await cache.set('delete:1', 'value');
+    await cache.delete('delete:1');
+
+    const value = await cache.get('delete:1');
+    expect(value).toBeNull();
+    expect(backend.deletes).toBe(1);
+    expect(backend.gets).toBe(1);
+  });
+
+  it('ttl expiration is respected in memory', async () => {
+    const backend = new FakeRedisBackend();
+    const cache = new Cache<string>({ backend, memory: true });
+
+    await cache.set('ttl:1', 'ephemeral', 20);
+    await new Promise((resolve) => setTimeout(resolve, 35));
+
+    const value = await cache.get('ttl:1');
+    expect(value).toBeNull();
+  });
+});

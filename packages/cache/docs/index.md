@@ -1,72 +1,109 @@
 # @feizk/cache Documentation
 
-Welcome to the official documentation for **@feizk/cache**, a type-safe, multi-backend caching library for TypeScript/Node.js.
+`@feizk/cache` is a **typed, backend-agnostic cache facade** for Node.js applications.
 
-## 🚀 Quick Links
+It supports:
 
-- **[Getting Started](getting-started.md)** – Install and basic usage
-- **[API Reference](api-reference.md)** – Full method signatures and types
-- **[Backends](backends.md)** – Memory vs Redis, configuration
-- **[Serialization](serialization.md)** – How data is stored and restored
-- **[Metrics](metrics.md)** – Monitoring cache performance
-- **[FAQ](faq.md)** – Frequently asked questions
-- **[Troubleshooting](troubleshooting.md)** – Solve common problems
-
-## ✨ Features at a Glance
-
-- 🔒 **Fully typed** – Generic `Cache<T>` with strict TypeScript
-- ⚡ **Multiple backends** – Memory (LRU) & Redis out of the box
-- ⏱️ **TTL support** – Per-key or default expiration
-- 📊 **Metrics** – Hit/miss rates, operation durations
-- 🔄 **Bulk ops** – `getMany`, `setMany`, `deleteMany`
-- 🎯 **Cache-aside** – `getOrFetch` for lazy loading
-- 🏷️ **Namespaces** – Key prefixing for isolation
-- 🧠 **Smart serialization** – Preserves Date, Map, Set, Buffer, RegExp
-
-## 📦 Installation
-
-```bash
-pnpm add @feizk/cache
-# or
-npm install @feizk/cache
-```
-
-## 💡 Simple Example
-
-```typescript
-import { Cache, MemoryBackend } from '@feizk/cache';
-
-const cache = new Cache<string>({
-  backend: new MemoryBackend({ maxEntries: 1000 }),
-  defaultTtl: 5 * 60 * 1000, // 5 minutes
-});
-
-await cache.set('greeting', 'Hello, world!');
-const value = await cache.get('greeting'); // 'Hello, world!'
-```
-
-## 📖 Documentation Structure
-
-1. **Getting Started** – Covers installation, core concepts, and basic operations.
-2. **API Reference** – Detailed description of all public classes, methods, and options.
-3. **Backends** – In-depth comparison and configuration for Memory and Redis.
-4. **Serialization** – How the library handles special JavaScript types.
-5. **Metrics** – Using performance metrics to monitor your cache.
-6. **FAQ** – Answers to common questions.
-7. **Troubleshooting** – Solutions for typical errors and issues.
-
-## 🎯 Next Steps
-
-- Read the [Getting Started](getting-started.md) guide.
-- Explore the [API Reference](api-reference.md) to learn all available methods.
-- Choose your backend and configure it using the [Backends](backends.md) guide.
-- Understand how [Serialization](serialization.md) works to avoid pitfalls.
-- Enable [Metrics](metrics.md) to keep an eye on cache health.
-
-## 📄 License
-
-MIT © [feizk](https://github.com/feizk)
+- a pluggable backend (`MemoryBackend`, `RedisBackend`, or custom `CacheBackend`),
+- optional default TTL,
+- key namespacing,
+- optional metrics,
+- optional debug logging,
+- and an optional **L1 in-memory layer** (powered by `@feizk/kit`) that sits in front of your backend.
 
 ---
 
-_Need help? Check the [FAQ](faq.md) or [Troubleshooting](troubleshooting.md)._
+## What this package solves
+
+Most applications need a common cache API across local and remote stores. `@feizk/cache` gives you one consistent `Cache<T>` interface so your application code does not care whether values come from in-process memory or Redis.
+
+When enabled, the memory layer behaves like this:
+
+1. Read from memory first.
+2. On miss, read backend.
+3. Backfill memory from backend value.
+4. Keep memory synchronized on writes and deletes.
+
+---
+
+## Documentation map
+
+- [Getting Started](./getting-started.md)
+  - installation
+  - first cache instance
+  - memory + redis two-tier setup
+- [API Reference](./api-reference.md)
+  - complete `Cache<T>` options and methods
+  - return values and semantics
+- [Backends](./backends.md)
+  - `MemoryBackend` and `RedisBackend`
+  - when to use each
+  - custom backend contract (`CacheBackend<T>`)
+- [Serialization](./serialization.md)
+  - default serializer behavior
+  - custom serializer guidance
+- [Metrics](./metrics.md)
+  - enabling metrics
+  - interpreting values
+- [FAQ](./faq.md)
+  - practical usage guidance
+- [Troubleshooting](./troubleshooting.md)
+  - common pitfalls and fixes
+
+---
+
+## Feature summary
+
+### 1) Type-safe cache API
+
+```ts
+const cache = new Cache<User>({ backend });
+```
+
+All reads/writes are typed as `User`.
+
+### 2) Backend abstraction
+
+You can swap backend implementations with no call-site changes.
+
+### 3) Optional TTL at two levels
+
+- instance default (`defaultTtl`)
+- per operation (`set`, `setMany`, `getOrFetch`)
+
+### 4) Optional L1 memory cache
+
+Enable with `memory: true` (or object form) to reduce backend round-trips.
+
+### 5) Optional debug logging
+
+Enable with `debug: true` and optionally pass `logger`.
+
+### 6) Metrics
+
+Enable with `enableMetrics: true` and call `getMetrics()`.
+
+---
+
+## Quick install
+
+```bash
+pnpm add @feizk/cache
+```
+
+For Redis usage:
+
+```bash
+pnpm add ioredis
+```
+
+---
+
+## Version notes for this doc set
+
+This documentation reflects the current implementation in this repository, including:
+
+- `debug` and `logger` cache options,
+- optional `memory` L1 support,
+- `update()` method,
+- synchronization behavior between memory and backend.

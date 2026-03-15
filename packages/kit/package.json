@@ -1,0 +1,36 @@
+{
+  "name": "@feizk/kit",
+  "version": "1.0.1",
+  "description": "Specialized in-memory collection utilities for high-performance caching",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
+  "exports": {
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js",
+    "require": "./dist/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "tsc": "tsc",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "cache",
+    "collection",
+    "memory"
+  ],
+  "author": "feizk",
+  "license": "MIT"
+}
