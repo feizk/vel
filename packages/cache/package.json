@@ -1,6 +1,6 @@
 {
   "name": "@feizk/cache",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "description": "Type-safe, multi-backend caching library for Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,8 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "prepublish": "tsup"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
