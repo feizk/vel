@@ -1,6 +1,6 @@
 {
   "name": "@feizk/cache",
-  "version": "1.0.0",
+  "version": "1.2.1",
   "description": "Type-safe, multi-backend caching library for Node.js",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,13 +27,13 @@
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "vitest": "^1.6.1",
-    "fakeredis": "^2.0.0"
+    "fakeredis": "^2.0.0",
+    "vitest": "^1.6.1"
   },
   "dependencies": {
-    "ioredis": "^5.3.0",
-    "@feizk/logger": "workspace:*",
-    "@feizk/kit": "workspace:*"
+    "@feizk/kit": "1.0.1",
+    "@feizk/logger": "^2.0.2",
+    "ioredis": "^5.3.0"
   },
   "files": [
     "dist",
