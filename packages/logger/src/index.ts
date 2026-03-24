@@ -8,8 +8,6 @@ export type {
   TimestampOption,
   Formatter,
   ChildLoggerOptions,
-  LogMeta,
-  EntryIdOptions,
 } from './types';
 
 export * from './utils';

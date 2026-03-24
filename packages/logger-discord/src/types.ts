@@ -1,9 +1,6 @@
 import type { LogLevel, LogEntry } from '@feizk/logger';
 
-export interface DiscordLogEntry extends LogEntry {
-  id?: string;
-  references?: string[];
-}
+export type DiscordLogEntry = LogEntry;
 
 export type { QueuePriority } from './persistent-queue';
 

@@ -13,10 +13,6 @@ export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
  * A structured log entry passed to transports and formatters.
  */
 export interface LogEntry {
-  /** Unique identifier for this log entry */
-  id?: string;
-  /** IDs of related log entries */
-  references?: string[];
   /** The log level of this entry */
   level: LogLevel;
   /** ISO 8601 formatted timestamp */
@@ -27,30 +23,6 @@ export interface LogEntry {
   prefix?: string;
   /** Context metadata attached to the logger */
   context: Record<string, unknown>;
-}
-
-/**
- * Optional metadata attached to a log entry.
- */
-export interface LogMeta {
-  /** Custom identifier for this entry (overrides generated ID when provided) */
-  id?: string;
-  /** Related log entry IDs */
-  references?: string[];
-}
-
-/**
- * Options for automatic log entry IDs and in-memory search index.
- */
-export interface EntryIdOptions {
-  /** Enable automatic entry IDs (default: false) */
-  enabled?: boolean;
-  /** Custom ID generator */
-  generator?: () => string;
-  /** Store entries in-memory for lookup by ID (default: false) */
-  store?: boolean;
-  /** Maximum number of indexed entries retained (default: 1000) */
-  maxStoredEntries?: number;
 }
 
 /**
@@ -121,6 +93,4 @@ export interface LoggerOptions {
   prefix?: string;
   /** Initial context metadata */
   context?: Record<string, unknown>;
-  /** Optional ID generation and lookup settings */
-  entryIds?: EntryIdOptions;
 }
