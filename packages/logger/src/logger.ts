@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { LOG_LEVEL_PRIORITIES, CONSOLE_METHODS } from './constants';
 import {
   getColoredLabel,
@@ -12,8 +11,6 @@ import type {
   LogEntry,
   Transport,
   ChildLoggerOptions,
-  LogMeta,
-  EntryIdOptions,
 } from './types';
 
 /**
@@ -29,17 +26,7 @@ interface InternalLoggerOptions {
   transports: Transport[];
   prefix: string | undefined;
   context: Record<string, unknown>;
-  entryIds: Required<EntryIdOptions>;
 }
-
-const DEFAULT_MAX_STORED_ENTRIES = 1000;
-
-const DEFAULT_ENTRY_ID_OPTIONS: Required<EntryIdOptions> = {
-  enabled: false,
-  generator: randomUUID,
-  store: false,
-  maxStoredEntries: DEFAULT_MAX_STORED_ENTRIES,
-};
 
 /**
  * A lightweight, pluggable logger with colored outputs, structured logging, and transport support.
@@ -49,7 +36,6 @@ export class Logger {
   private readonly transports: Transport[];
   private readonly prefix?: string;
   private readonly context: Readonly<Record<string, unknown>>;
-  private readonly entryStore = new Map<string, LogEntry>();
 
   constructor(options: LoggerOptions = {}) {
     this.options = {
@@ -62,7 +48,6 @@ export class Logger {
       transports: [...(options.transports ?? [])],
       prefix: options.prefix,
       context: { ...(options.context ?? {}) },
-      entryIds: this.resolveEntryIdOptions(options.entryIds),
     };
     this.transports = this.options.transports;
     this.prefix = this.options.prefix;
@@ -93,64 +78,12 @@ export class Logger {
     this.log('fatal', args);
   }
 
-  /**
-   * Log a message with metadata (e.g. id/references).
-   */
-  logWithMeta(
-    level: LogLevel,
-    meta: LogMeta,
-    ...args: unknown[]
-  ): string | undefined {
-    return this.log(level, args, meta);
-  }
-
-  traceWithMeta(meta: LogMeta, ...args: unknown[]): string | undefined {
-    return this.log('trace', args, meta);
-  }
-
-  debugWithMeta(meta: LogMeta, ...args: unknown[]): string | undefined {
-    return this.log('debug', args, meta);
-  }
-
-  infoWithMeta(meta: LogMeta, ...args: unknown[]): string | undefined {
-    return this.log('info', args, meta);
-  }
-
-  warnWithMeta(meta: LogMeta, ...args: unknown[]): string | undefined {
-    return this.log('warn', args, meta);
-  }
-
-  errorWithMeta(meta: LogMeta, ...args: unknown[]): string | undefined {
-    return this.log('error', args, meta);
-  }
-
-  fatalWithMeta(meta: LogMeta, ...args: unknown[]): string | undefined {
-    return this.log('fatal', args, meta);
-  }
-
-  /**
-   * Create a new metadata object that references an existing log ID.
-   */
-  reference(id: string, extra: LogMeta = {}): LogMeta {
-    return {
-      ...extra,
-      references: extra.references ? [...extra.references, id] : [id],
-    };
-  }
-
   setLevel(level: LogLevel): void {
     this.options.level = level;
   }
 
   getLevel(): LogLevel {
     return this.options.level;
-  }
-
-  /**
-   * Find a previously indexed log entry by ID.
-   */
-  findById(id: string): LogEntry | undefined {
-    return this.entryStore.get(id);
   }
 
   addTransport(transport: Transport): void {
@@ -186,7 +119,6 @@ export class Logger {
       transports: this.transports.slice(),
       prefix: combinedPrefix,
       context: combinedContext,
-      entryIds: this.options.entryIds,
     });
   }
 
@@ -199,17 +131,12 @@ export class Logger {
 
     await Promise.all(destroyPromises);
     this.transports.length = 0;
-    this.entryStore.clear();
   }
 
-  private log(
-    level: LogLevel,
-    args: unknown[],
-    meta?: LogMeta,
-  ): string | undefined {
-    if (!this.shouldLog(level)) return undefined;
+  private log(level: LogLevel, args: unknown[]): void {
+    if (!this.shouldLog(level)) return;
 
-    const entry = this.createEntry(level, args, meta);
+    const entry = this.createEntry(level, args);
 
     if (!this.options.silent) {
       this.writeToConsole(level, entry);
@@ -218,67 +145,16 @@ export class Logger {
     for (const transport of this.transports) {
       this.dispatchToTransport(transport, entry);
     }
-
-    return entry.id;
   }
 
-  private createEntry(
-    level: LogLevel,
-    args: unknown[],
-    meta?: LogMeta,
-  ): LogEntry {
-    const references = meta?.references?.filter(
-      (id): id is string => id.length > 0,
-    );
-    const id = this.resolveEntryId(meta?.id);
-
-    const entry: LogEntry = {
-      id,
-      references:
-        references && references.length > 0
-          ? [...new Set(references)]
-          : undefined,
+  private createEntry(level: LogLevel, args: unknown[]): LogEntry {
+    return {
       level,
       timestamp: formatTimestamp(this.options.timestamp),
       args,
       prefix: this.prefix,
       context: this.context,
     };
-
-    if (entry.id && this.options.entryIds.store) {
-      this.storeEntry(entry.id, entry);
-    }
-
-    return entry;
-  }
-
-  private resolveEntryId(providedId?: string): string | undefined {
-    if (!this.options.entryIds.enabled) {
-      return providedId;
-    }
-
-    if (providedId) {
-      return providedId;
-    }
-
-    return this.options.entryIds.generator();
-  }
-
-  private storeEntry(id: string, entry: LogEntry): void {
-    if (this.entryStore.has(id)) {
-      this.entryStore.set(id, entry);
-      return;
-    }
-
-    this.entryStore.set(id, entry);
-    if (this.entryStore.size <= this.options.entryIds.maxStoredEntries) {
-      return;
-    }
-
-    const oldestKey = this.entryStore.keys().next().value;
-    if (oldestKey) {
-      this.entryStore.delete(oldestKey);
-    }
   }
 
   private writeToConsole(level: LogLevel, entry: LogEntry): void {
@@ -296,16 +172,8 @@ export class Logger {
 
     const label = getColoredLabel(entry.level, this.options.enableColors);
     const prefixStr = entry.prefix ? ` [${entry.prefix}]` : '';
-    const idStr = entry.id ? ` [id:${entry.id}]` : '';
-    const referencesStr =
-      entry.references && entry.references.length > 0
-        ? ` [refs:${entry.references.join(',')}]`
-        : '';
     const message = buildMessage(entry.args);
-    console[method](
-      `${label} ${entry.timestamp}${prefixStr}${idStr}${referencesStr}`,
-      message,
-    );
+    console[method](`${label} ${entry.timestamp}${prefixStr}`, message);
   }
 
   private dispatchToTransport(transport: Transport, entry: LogEntry): void {
@@ -325,19 +193,5 @@ export class Logger {
     return (
       LOG_LEVEL_PRIORITIES[level] >= LOG_LEVEL_PRIORITIES[this.options.level]
     );
-  }
-
-  private resolveEntryIdOptions(
-    options?: EntryIdOptions,
-  ): Required<EntryIdOptions> {
-    return {
-      enabled: options?.enabled ?? DEFAULT_ENTRY_ID_OPTIONS.enabled,
-      generator: options?.generator ?? DEFAULT_ENTRY_ID_OPTIONS.generator,
-      store: options?.store ?? DEFAULT_ENTRY_ID_OPTIONS.store,
-      maxStoredEntries: Math.max(
-        1,
-        options?.maxStoredEntries ?? DEFAULT_ENTRY_ID_OPTIONS.maxStoredEntries,
-      ),
-    };
   }
 }

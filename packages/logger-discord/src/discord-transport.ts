@@ -258,24 +258,6 @@ export class DiscordTransport implements Transport {
       });
     }
 
-    if (entry.id) {
-      embed.fields!.unshift({
-        name: 'Log ID',
-        value: `\`${entry.id}\``,
-        inline: true,
-      });
-    }
-
-    if (entry.references && entry.references.length > 0) {
-      embed.fields!.push({
-        name: 'References',
-        value: entry.references
-          .map((reference: string) => `\`${reference}\``)
-          .join(', '),
-        inline: false,
-      });
-    }
-
     if (embed.fields && embed.fields.length === 0) {
       delete embed.fields;
     }
