@@ -91,6 +91,7 @@ This pattern can reduce Redis reads for hot keys while preserving shared distrib
 You can implement your own backend by fulfilling `CacheBackend<T>`.
 
 Typical examples:
+
 - DynamoDB-backed cache table,
 - Mongo collection cache,
 - in-house key-value service.

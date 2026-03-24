@@ -295,7 +295,9 @@ describe('Optional Memory Layer', () => {
       this.sets++;
       const ttl = options?.ttl;
       const expiresAt =
-        ttl !== undefined && ttl !== null && ttl > 0 ? Date.now() + ttl : undefined;
+        ttl !== undefined && ttl !== null && ttl > 0
+          ? Date.now() + ttl
+          : undefined;
       this.store.set(key, { value, expiresAt });
     }
 

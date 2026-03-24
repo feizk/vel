@@ -48,6 +48,7 @@ interface CacheOptions<T> {
 Returns value or `null` if missing.
 
 When memory is enabled:
+
 - checks memory first,
 - on miss reads backend,
 - on backend hit repopulates memory.
@@ -55,6 +56,7 @@ When memory is enabled:
 ### `set(key: string, value: T, ttl?: number | null): Promise<void>`
 
 Stores value. TTL behavior:
+
 - `undefined` → uses `defaultTtl`
 - `null` → persistent
 - positive number → expires in that many ms
@@ -100,6 +102,7 @@ Returns keys visible to this cache namespace.
 ### `getTtl(key: string): Promise<number>`
 
 Returns:
+
 - `-2` missing key,
 - `-1` no expiration,
 - positive number for remaining TTL ms.
@@ -111,6 +114,7 @@ Extends backend TTL and updates memory TTL for resident key.
 ### `getOrFetch(key, fetcher, options?): Promise<T>`
 
 Cache-aside helper:
+
 1. `get`
 2. if hit, return
 3. if miss, run fetcher
@@ -150,7 +154,10 @@ interface CacheBackend<T> {
   get(key: string): Promise<T | null>;
   getMany(keys: string[]): Promise<Map<string, T>>;
   set(key: string, value: T, options?: { ttl?: number | null }): Promise<void>;
-  setMany(entries: [string, T][], options?: { ttl?: number | null }): Promise<void>;
+  setMany(
+    entries: [string, T][],
+    options?: { ttl?: number | null },
+  ): Promise<void>;
   delete(key: string): Promise<boolean>;
   deleteMany(keys: string[]): Promise<number>;
   exists(key: string): Promise<boolean>;
