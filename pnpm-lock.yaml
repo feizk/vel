@@ -81,8 +81,8 @@ importers:
   packages/logger-discord:
     devDependencies:
       '@feizk/logger':
-        specifier: 2.0.2
-        version: 2.0.2
+        specifier: 2.1.0
+        version: 2.1.0
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.30
@@ -93,8 +93,8 @@ importers:
   packages/logger-file:
     devDependencies:
       '@feizk/logger':
-        specifier: 2.0.2
-        version: 2.0.2
+        specifier: 2.1.0
+        version: 2.1.0
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.30
@@ -501,6 +501,10 @@ packages:
 
   '@feizk/logger@2.0.2':
     resolution: {integrity: sha512-iFvjaY+FX93JnDeJvs4S5jUqYDB0H4PyCW6Ezx8Bgng5C/aaWWlS3n85hQjd1Opr0XVM5upocxYTGSxD2CKL/g==}
+    engines: {node: '>=18'}
+
+  '@feizk/logger@2.1.0':
+    resolution: {integrity: sha512-emPt6KlU1jQWeDm9WNB0P3IUM8LlXT5/sVT7TLPInGedGcazRbsuIX65+HbBf6TOPrtuyMIm6XygkQJpgkRQPA==}
     engines: {node: '>=18'}
 
   '@humanfs/core@0.19.1':
@@ -2130,6 +2134,8 @@ snapshots:
   '@feizk/kit@1.0.2': {}
 
   '@feizk/logger@2.0.2': {}
+
+  '@feizk/logger@2.1.0': {}
 
   '@humanfs/core@0.19.1': {}
 
