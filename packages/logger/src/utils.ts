@@ -70,14 +70,6 @@ export function formatJson(entry: LogEntry): string {
     message,
   };
 
-  if (entry.id) {
-    output.id = entry.id;
-  }
-
-  if (entry.references && entry.references.length > 0) {
-    output.references = entry.references;
-  }
-
   if (entry.prefix) {
     output.prefix = entry.prefix;
   }
