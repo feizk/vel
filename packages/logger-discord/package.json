@@ -1,6 +1,6 @@
 {
   "name": "@feizk/logger-discord",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Discord transport plugin for @feizk/logger",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

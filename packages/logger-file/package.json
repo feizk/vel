@@ -1,6 +1,6 @@
 {
   "name": "@feizk/logger-file",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "File transport plugin for @feizk/logger",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
