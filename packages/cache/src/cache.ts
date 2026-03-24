@@ -49,10 +49,12 @@ export class Cache<T> {
     this.defaultTtl = options.defaultTtl;
     this.enableMetrics = options.enableMetrics ?? false;
     this.debug = options.debug ?? false;
-    this.logger = options.logger ?? new Logger({
-      level: 'debug',
-      prefix: 'cache',
-    });
+    this.logger =
+      options.logger ??
+      new Logger({
+        level: 'debug',
+        prefix: 'cache',
+      });
 
     this.memory = this.resolveMemoryLayer(options.memory);
 
@@ -154,7 +156,10 @@ export class Cache<T> {
     });
   }
 
-  private async syncMemoryFromBackend(fullKey: string, value: T): Promise<void> {
+  private async syncMemoryFromBackend(
+    fullKey: string,
+    value: T,
+  ): Promise<void> {
     if (!this.memory) return;
 
     const ttlMs = await this.backend.getTtl(fullKey);
@@ -193,7 +198,8 @@ export class Cache<T> {
             expiresAt: memoryRecord.expiresAt ?? null,
           });
           if (this.enableMetrics && start !== undefined) {
-            const duration = Number(process.hrtime.bigint() - start) / 1_000_000;
+            const duration =
+              Number(process.hrtime.bigint() - start) / 1_000_000;
             this.recordGet(true, duration);
           }
           return memoryRecord.value;
@@ -203,10 +209,13 @@ export class Cache<T> {
       }
 
       const value = await this.backend.get(fullKey);
-      this.logDebug(`redis:get ${fullKey} (${value === null ? 'miss' : 'hit'})`, {
-        key: fullKey,
-        outcome: value === null ? 'miss' : 'hit',
-      });
+      this.logDebug(
+        `redis:get ${fullKey} (${value === null ? 'miss' : 'hit'})`,
+        {
+          key: fullKey,
+          outcome: value === null ? 'miss' : 'hit',
+        },
+      );
 
       if (value !== null && this.memory) {
         await this.syncMemoryFromBackend(fullKey, value);
@@ -236,7 +245,10 @@ export class Cache<T> {
       const options: SetOptions = { ttl: resolvedTtl };
 
       await this.backend.set(fullKey, value, options);
-      this.logDebug(`redis:set ${fullKey}`, { key: fullKey, ttl: resolvedTtl ?? null });
+      this.logDebug(`redis:set ${fullKey}`, {
+        key: fullKey,
+        ttl: resolvedTtl ?? null,
+      });
 
       await this.setMemoryEntry(fullKey, value, resolvedTtl);
 
@@ -261,7 +273,10 @@ export class Cache<T> {
     const fullKey = this.buildKey(key);
     try {
       const result = await this.backend.delete(fullKey);
-      this.logDebug(`redis:delete ${fullKey}`, { key: fullKey, deleted: result });
+      this.logDebug(`redis:delete ${fullKey}`, {
+        key: fullKey,
+        deleted: result,
+      });
       this.deleteMemoryEntry(fullKey);
       if (result) this.recordDelete();
       return result;
@@ -330,7 +345,10 @@ export class Cache<T> {
     const fullKeys = keys.map((k) => this.buildKey(k));
     try {
       const result = await this.backend.deleteMany(fullKeys);
-      this.logDebug('redis:deleteMany', { totalKeys: keys.length, keys: fullKeys });
+      this.logDebug('redis:deleteMany', {
+        totalKeys: keys.length,
+        keys: fullKeys,
+      });
       if (this.memory) {
         for (const key of fullKeys) {
           this.deleteMemoryEntry(key);
@@ -381,7 +399,9 @@ export class Cache<T> {
     try {
       const updated = (await this.backend.extendTtl?.(fullKey, ttl)) ?? false;
       if (updated && this.memory) {
-        const record = this.memory.getRecord(fullKey) as MemoryRecord<T> | undefined;
+        const record = this.memory.getRecord(fullKey) as
+          | MemoryRecord<T>
+          | undefined;
         if (record) {
           this.memory.setWithTtl(fullKey, record.value, ttl);
           this.logDebug(`memory:set ${fullKey}`, {
