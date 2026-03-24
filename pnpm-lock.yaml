@@ -90,6 +90,18 @@ importers:
         specifier: ^1.6.1
         version: 1.6.1(@types/node@20.19.30)
 
+  packages/logger-file:
+    devDependencies:
+      '@feizk/logger':
+        specifier: 2.0.2
+        version: 2.0.2
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.19.30
+      vitest:
+        specifier: ^1.6.1
+        version: 1.6.1(@types/node@20.19.30)
+
 packages:
 
   '@babel/runtime@7.29.2':
