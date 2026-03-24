@@ -32,7 +32,7 @@
     "vitest": "^1.6.1"
   },
   "dependencies": {
-    "@feizk/kit": "1.0.1",
+    "@feizk/kit": "1.0.2",
     "@feizk/logger": "^2.0.2",
     "ioredis": "^5.3.0"
   },
