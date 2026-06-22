@@ -29,7 +29,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "fakeredis": "^2.0.0",
-    "vitest": "^1.6.1"
+    "vitest": "^4.1.0"
   },
   "dependencies": {
     "@feizk/kit": "1.0.2",
